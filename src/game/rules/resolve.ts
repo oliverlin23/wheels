@@ -1,4 +1,4 @@
-import type { GameState, LogEvent, PlayerState } from '../types'
+import type { GameState, LogEvent, Panel, PlayerState } from '../types'
 import { countSymbols, countXp } from './panels'
 import { calculateEnergy } from './energy'
 import { buildBulwark } from './bulwark'
@@ -6,40 +6,80 @@ import { getStats, activateFigurine } from './figurines'
 import { addXp, applyBomb } from './xp'
 
 /**
- * The 10-step resolution order from the rules doc.
- * Takes the current GameState (with wheel results set) and returns
- * the new GameState plus an ordered list of LogEvents.
+ * Resolve a round: process BOTH players' wheel results.
  *
- * Steps:
- *  1. Panel XP: starry panels grant XP, level-ups trigger immediately
- *  2. Hammer panels: bulwark built from hammer results
- *  3. Energy panels: energy from squares/diamonds added to heroes
- *  4. Assassin acts (if enough energy). Gains 2 XP.
- *  5. Priest acts: heals crown, grants energy to partner. Gains 2 XP.
- *  6. Engineer acts. Gains 2 XP.
- *  7. Bombs triggered by steps 4-6 resolve.
- *  8. Remaining heroes act (Warrior, Mage, Archer). Gains 2 XP.
- *  9. Bombs triggered by step 8 resolve.
- * 10. 0 HP crown check (simultaneous for both players).
+ * Steps 1-9 run for Player 0 (attacking Player 1),
+ * then steps 1-9 run for Player 1 (attacking Player 0),
+ * then step 10 checks both crowns simultaneously.
  */
 export function resolve(state: GameState): { state: GameState; events: LogEvent[] } {
-  const results = state.wheels.results
-  if (results === null) {
-    return { state, events: [] }
+  const events: LogEvent[] = []
+  let players: [PlayerState, PlayerState] = [
+    deepCopyPlayer(state.players[0]),
+    deepCopyPlayer(state.players[1]),
+  ]
+
+  // Process Player 0's wheels (attacking Player 1)
+  const results0 = state.wheels[0].results
+  if (results0) {
+    events.push({ type: 'panel_xp', detail: '> PLAYER 1 RESOLUTION' })
+    const r = resolveOnePlayer(results0, players[0], players[1])
+    players = [r.attacker, r.defender]
+    events.push(...r.events)
   }
 
+  // Process Player 1's wheels (attacking Player 0)
+  const results1 = state.wheels[1].results
+  if (results1) {
+    events.push({ type: 'panel_xp', detail: '> PLAYER 2 RESOLUTION' })
+    const r = resolveOnePlayer(results1, players[1], players[0])
+    players = [r.defender, r.attacker]
+    events.push(...r.events)
+  }
+
+  // Step 10: simultaneous 0 HP check
+  let winner: 0 | 1 | 'tie' | null = null
+  const p0Dead = players[0].crownHp <= 0
+  const p1Dead = players[1].crownHp <= 0
+
+  if (p0Dead && p1Dead) {
+    winner = 'tie'
+    events.push({ type: 'game_over', detail: 'Both crowns destroyed - TIE!' })
+  } else if (p0Dead) {
+    winner = 1
+    events.push({ type: 'game_over', detail: 'Player 1 crown destroyed - Player 2 wins!' })
+  } else if (p1Dead) {
+    winner = 0
+    events.push({ type: 'game_over', detail: 'Player 2 crown destroyed - Player 1 wins!' })
+  }
+
+  return {
+    state: {
+      ...state,
+      players,
+      roundPhase: winner !== null ? 'done' : 'resolving',
+      winner,
+    },
+    events,
+  }
+}
+
+/**
+ * Steps 1-9 for one player's wheel results.
+ * The "attacker" is the player whose wheels are being resolved.
+ * The "defender" is their opponent.
+ */
+function resolveOnePlayer(
+  results: [Panel, Panel, Panel, Panel, Panel],
+  attacker: PlayerState,
+  defender: PlayerState,
+): { attacker: PlayerState; defender: PlayerState; events: LogEvent[] } {
   const events: LogEvent[] = []
-  const cp = state.currentPlayer
-  const op: 0 | 1 = cp === 0 ? 1 : 0
-
-  let currentPlayer = deepCopyPlayer(state.players[cp])
-  let opponent = deepCopyPlayer(state.players[op])
-
-  // Pending bombs accumulate during resolution
+  let currentPlayer = deepCopyPlayer(attacker)
+  let opponent = deepCopyPlayer(defender)
   let pendingBombs: { source: string }[] = []
 
   // Step 1: Panel XP
-  events.push({ type: 'panel_xp', detail: '> PANEL XP' })
   for (let i = 0; i < 2; i++) {
     const hero = currentPlayer.heroes[i]
     const xpCount = countXp(results, hero.slot)
@@ -48,14 +88,12 @@ export function resolve(state: GameState): { state: GameState; events: LogEvent[
       currentPlayer.heroes[i] = xpResult.hero
       events.push({
         type: 'panel_xp',
-        detail: `${hero.name} gains ${xpCount} XP from starry panels (${xpResult.hero.xp}/${10})`,
+        detail: `${hero.name} gains ${xpCount} XP from starry panels (${xpResult.hero.xp}/10)`,
         data: { figurine: hero.name, amount: xpCount },
       })
       for (const evt of xpResult.events) {
         events.push(evt)
-        if (evt.type === 'bomb') {
-          pendingBombs.push({ source: hero.name })
-        }
+        if (evt.type === 'bomb') pendingBombs.push({ source: hero.name })
       }
     }
   }
@@ -67,12 +105,10 @@ export function resolve(state: GameState): { state: GameState; events: LogEvent[
     currentPlayer = bulwarkResult.player
     events.push({
       type: 'hammers',
-      detail: `HAMMERS x ${String(hammerCount).padStart(2, '0')} -> BULWARK +${hammerCount - 2} (${String(currentPlayer.bulwark).padStart(2, '0')}/${String(5).padStart(2, '0')})`,
+      detail: `HAMMERS x${hammerCount} -> BULWARK +${hammerCount - 2} (${currentPlayer.bulwark}/5)`,
       data: { count: hammerCount, gained: hammerCount - 2 },
     })
-    for (const evt of bulwarkResult.events) {
-      events.push(evt)
-    }
+    events.push(...bulwarkResult.events)
   }
 
   // Step 3: Energy panels
@@ -85,20 +121,18 @@ export function resolve(state: GameState): { state: GameState; events: LogEvent[
     const energyGained = calculateEnergy(symbolCount)
     if (energyGained > 0) {
       const stats = getStats(hero.name, hero.rank)
-      // Just accumulate energy here; activation check + reset happens in steps 4-8
       const newEnergy = hero.energy + energyGained
       currentPlayer.heroes[i] = { ...hero, energy: newEnergy }
       const symbolName = hero.slot === 'squares' ? 'SQUARES' : 'DIAMONDS'
       events.push({
         type: 'energy',
-        detail: `${symbolName} x ${String(symbolCount).padStart(2, '0')} -> ${hero.name} +${energyGained} ENERGY (${newEnergy}/${stats.energyCost})`,
+        detail: `${symbolName} x${symbolCount} -> ${hero.name} +${energyGained} ENERGY (${newEnergy}/${stats.energyCost})`,
         data: { figurine: hero.name, symbolCount, gained: energyGained },
       })
     }
   }
 
-  // Steps 4-6: Assassin, Priest, Engineer act (in that order)
-  // Within each step, squares hero acts before diamonds hero
+  // Steps 4-6: Assassin, Priest, Engineer (priority order)
   const priorityOrder: Array<'assassin' | 'priest' | 'engineer'> = ['assassin', 'priest', 'engineer']
 
   for (const figurineName of priorityOrder) {
@@ -107,26 +141,20 @@ export function resolve(state: GameState): { state: GameState; events: LogEvent[
       const hero = currentPlayer.heroes[idx]
       const stats = getStats(hero.name, hero.rank)
       if (hero.energy >= stats.energyCost) {
-        // Activate
         const result = activateFigurine(hero, currentPlayer, opponent)
         currentPlayer = result.attacker
         opponent = result.defender
-        for (const evt of result.events) {
-          events.push(evt)
-        }
+        events.push(...result.events)
 
-        // Grant 2 XP after activation
         const xpResult = addXp(currentPlayer.heroes[idx], 2)
         currentPlayer.heroes[idx] = xpResult.hero
         events.push({
           type: 'panel_xp',
-          detail: `${hero.name} gains 2 XP from activation (${xpResult.hero.xp}/${10})`,
+          detail: `${hero.name} gains 2 XP from activation (${xpResult.hero.xp}/10)`,
         })
         for (const evt of xpResult.events) {
           events.push(evt)
-          if (evt.type === 'bomb') {
-            pendingBombs.push({ source: hero.name })
-          }
+          if (evt.type === 'bomb') pendingBombs.push({ source: hero.name })
         }
       }
     }
@@ -136,16 +164,12 @@ export function resolve(state: GameState): { state: GameState; events: LogEvent[
   for (const _bomb of pendingBombs) {
     const bombResult = applyBomb(opponent)
     opponent = bombResult.defender
-    for (const evt of bombResult.events) {
-      events.push(evt)
-    }
+    events.push(...bombResult.events)
   }
   pendingBombs = []
 
-  // Step 8: Remaining heroes act (Warrior, Mage, Archer)
-  // Also includes any hero pushed past threshold by Priest energy
+  // Step 8: Remaining heroes (Warrior, Mage, Archer)
   const remainingNames = new Set(['warrior', 'mage', 'archer'])
-  // Squares hero (index 0) acts before diamonds hero (index 1)
   for (let i = 0; i < 2; i++) {
     const hero = currentPlayer.heroes[i]
     if (!remainingNames.has(hero.name)) continue
@@ -154,22 +178,17 @@ export function resolve(state: GameState): { state: GameState; events: LogEvent[
       const result = activateFigurine(hero, currentPlayer, opponent)
       currentPlayer = result.attacker
       opponent = result.defender
-      for (const evt of result.events) {
-        events.push(evt)
-      }
+      events.push(...result.events)
 
-      // Grant 2 XP after activation
       const xpResult = addXp(currentPlayer.heroes[i], 2)
       currentPlayer.heroes[i] = xpResult.hero
       events.push({
         type: 'panel_xp',
-        detail: `${hero.name} gains 2 XP from activation (${xpResult.hero.xp}/${10})`,
+        detail: `${hero.name} gains 2 XP from activation (${xpResult.hero.xp}/10)`,
       })
       for (const evt of xpResult.events) {
         events.push(evt)
-        if (evt.type === 'bomb') {
-          pendingBombs.push({ source: hero.name })
-        }
+        if (evt.type === 'bomb') pendingBombs.push({ source: hero.name })
       }
     }
   }
@@ -178,52 +197,14 @@ export function resolve(state: GameState): { state: GameState; events: LogEvent[
   for (const _bomb of pendingBombs) {
     const bombResult = applyBomb(opponent)
     opponent = bombResult.defender
-    for (const evt of bombResult.events) {
-      events.push(evt)
-    }
+    events.push(...bombResult.events)
   }
 
-  // Step 10: 0 HP crown check (simultaneous)
-  const newPlayers: [PlayerState, PlayerState] = cp === 0
-    ? [currentPlayer, opponent]
-    : [opponent, currentPlayer]
-
-  let winner: 0 | 1 | 'tie' | null = null
-  const p1Dead = newPlayers[0].crownHp <= 0
-  const p2Dead = newPlayers[1].crownHp <= 0
-
-  if (p1Dead && p2Dead) {
-    winner = 'tie'
-    events.push({ type: 'game_over', detail: 'Both crowns destroyed - TIE!' })
-  } else if (p1Dead) {
-    winner = 1
-    events.push({ type: 'game_over', detail: 'Player 1 crown destroyed - Player 2 wins!' })
-  } else if (p2Dead) {
-    winner = 0
-    events.push({ type: 'game_over', detail: 'Player 2 crown destroyed - Player 1 wins!' })
-  }
-
-  return {
-    state: {
-      ...state,
-      players: newPlayers,
-      phase: winner !== null ? 'done' : state.phase,
-      winner,
-    },
-    events,
-  }
+  return { attacker: currentPlayer, defender: opponent, events }
 }
 
-/**
- * Get hero indices sorted by slot (squares = 0 first, diamonds = 1 second)
- * for heroes matching the given name.
- */
-function getHeroIndicesByName(
-  player: PlayerState,
-  name: string,
-): number[] {
+function getHeroIndicesByName(player: PlayerState, name: string): number[] {
   const indices: number[] = []
-  // Squares slot (index 0) always acts before diamonds (index 1)
   if (player.heroes[0].name === name) indices.push(0)
   if (player.heroes[1].name === name) indices.push(1)
   return indices
@@ -233,9 +214,6 @@ function deepCopyPlayer(player: PlayerState): PlayerState {
   return {
     crownHp: player.crownHp,
     bulwark: player.bulwark,
-    heroes: [
-      { ...player.heroes[0] },
-      { ...player.heroes[1] },
-    ],
+    heroes: [{ ...player.heroes[0] }, { ...player.heroes[1] }],
   }
 }

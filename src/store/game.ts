@@ -1,26 +1,35 @@
 import { create } from 'zustand'
-import type { GameState, FigurineName } from '../game/types'
+import type { GameState, FigurineName, WheelState } from '../game/types'
 import { createRng } from '../game/rng'
 import { WHEELS } from '../game/rules/panels'
 import {
-  startTurn as startTurnAction,
-  lockWheel as lockWheelAction,
-  endTurn as endTurnAction,
+  startRound as startRoundAction,
   spin as spinAction,
+  lockWheel as lockWheelAction,
+  confirmSpins as confirmSpinsAction,
+  bothConfirmed,
+  revealWheels,
 } from '../game/rules/actions'
 import { resolve } from '../game/rules/resolve'
 import { useLogStore } from './log'
+
+const INITIAL_WHEEL_STATE: WheelState = {
+  spinsRemaining: 3,
+  locked: [false, false, false, false, false],
+  results: null,
+  resultIndices: null,
+}
 
 interface GameStore {
   game: GameState
   rng: () => number
   spinCount: number
-  // Local actions (used by Debug panel and tests)
-  spin: () => void
-  lockWheel: (index: number) => void
-  startTurn: () => void
-  resolveRoll: () => void
-  endTurn: () => void
+  // Local actions (used by Debug panel and local testing)
+  spin: (playerIndex: 0 | 1) => void
+  lockWheel: (playerIndex: 0 | 1, wheelIndex: number) => void
+  confirmSpins: (playerIndex: 0 | 1) => void
+  startRound: () => void
+  resolveRound: () => void
   reset: (seed: number, p1Heroes: [FigurineName, FigurineName], p2Heroes: [FigurineName, FigurineName]) => void
   // Network actions (server pushes state)
   setGame: (game: GameState) => void
@@ -51,16 +60,11 @@ export function createInitialGameState(
         ],
       },
     ],
-    currentPlayer: 0,
-    turn: 1,
-    phase: 'spinning',
+    wheels: [{ ...INITIAL_WHEEL_STATE }, { ...INITIAL_WHEEL_STATE }],
+    round: 1,
+    roundPhase: 'spinning',
+    confirmed: [false, false],
     winner: null,
-    wheels: {
-      spinsRemaining: 3,
-      locked: [false, false, false, false, false],
-      results: null,
-      resultIndices: null,
-    },
   }
 }
 
@@ -69,38 +73,43 @@ export const useGameStore = create<GameStore>((set, get) => ({
   rng: createRng(42),
   spinCount: 0,
 
-  spin: () => {
+  spin: (playerIndex) => {
     const { game, rng, spinCount } = get()
-    const newGame = spinAction(game, rng, WHEELS)
+    const newGame = spinAction(game, playerIndex, rng, WHEELS)
     if (newGame === game) return
     set({ game: newGame, spinCount: spinCount + 1 })
-    if (newGame.wheels.spinsRemaining === 0) {
-      get().resolveRoll()
+  },
+
+  lockWheel: (playerIndex, wheelIndex) => {
+    const { game } = get()
+    set({ game: lockWheelAction(game, playerIndex, wheelIndex) })
+  },
+
+  confirmSpins: (playerIndex) => {
+    const { game } = get()
+    let newGame = confirmSpinsAction(game, playerIndex)
+    // If both confirmed, auto-reveal and resolve
+    if (bothConfirmed(newGame)) {
+      newGame = revealWheels(newGame)
+      set({ game: newGame })
+      get().resolveRound()
+      return
     }
+    set({ game: newGame })
   },
 
-  lockWheel: (index: number) => {
+  startRound: () => {
     const { game } = get()
-    set({ game: lockWheelAction(game, index) })
-  },
-
-  startTurn: () => {
-    const { game } = get()
-    const result = startTurnAction(game)
+    const result = startRoundAction(game)
     useLogStore.getState().pushEvents(result.events)
     set({ game: result.state })
   },
 
-  resolveRoll: () => {
+  resolveRound: () => {
     const { game } = get()
     const result = resolve(game)
     useLogStore.getState().pushEvents(result.events)
     set({ game: result.state })
-  },
-
-  endTurn: () => {
-    const { game } = get()
-    set({ game: endTurnAction(game) })
   },
 
   reset: (seed, p1Heroes, p2Heroes) => {
@@ -112,7 +121,6 @@ export const useGameStore = create<GameStore>((set, get) => ({
     })
   },
 
-  // Server pushes state directly
   setGame: (game) => set({ game }),
   incrementSpinCount: () => set((s) => ({ spinCount: s.spinCount + 1 })),
 }))

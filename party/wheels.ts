@@ -1,7 +1,7 @@
 import type * as Party from "partykit/server"
 import type { FigurineName, GameState, LogEvent } from '../src/game/types'
 import type { ClientMessage, ServerMessage, RoomPhase } from '../src/network/protocol'
-import { spin, startTurn, lockWheel, endTurn } from '../src/game/rules/actions'
+import { startRound, spin, lockWheel, confirmSpins, bothConfirmed, revealWheels } from '../src/game/rules/actions'
 import { resolve } from '../src/game/rules/resolve'
 import { createRng } from '../src/game/rng'
 import { WHEELS } from '../src/game/rules/panels'
@@ -12,9 +12,12 @@ type RoomState = {
   players: { id: string; name: string; heroes?: [FigurineName, FigurineName] }[]
   spectatorIds: Set<string>
   game: GameState | null
-  rng: (() => number) | null
+  rng: [(() => number), (() => number)] | null
   seed: number
+  spinTimer: ReturnType<typeof setTimeout> | null
 }
+
+const SPIN_TIMEOUT_MS = 60_000
 
 export default class WheelsServer implements Party.Server {
   state: RoomState
@@ -27,6 +30,7 @@ export default class WheelsServer implements Party.Server {
       game: null,
       rng: null,
       seed: Math.floor(Math.random() * 0xFFFFFFFF),
+      spinTimer: null,
     }
   }
 
@@ -55,21 +59,19 @@ export default class WheelsServer implements Party.Server {
       this.state.players.splice(playerIndex, 1)
 
       if (this.state.phase === 'playing' && this.state.game && this.state.players.length === 1) {
-        // Remaining player wins by forfeit
-        const remainingId = this.state.players[0].id
-        // Find which player index the remaining player was
-        // Since one was removed, we need to figure out the winner
-        // The remaining player's original index: if playerIndex was 0, remaining was 1; if 1, remaining was 0
+        this.clearSpinTimer()
         const winnerIndex: 0 | 1 = playerIndex === 0 ? 1 : 0
         this.state.game = {
           ...this.state.game,
-          phase: 'done',
+          roundPhase: 'done',
           winner: winnerIndex,
         }
         this.state.phase = 'done'
-        this.broadcastStateUpdate([
-          { type: 'game_over', detail: `Player ${winnerIndex + 1} wins by forfeit!` },
-        ])
+        this.broadcast({
+          type: 'RESOLVE_UPDATE',
+          game: this.state.game,
+          events: [{ type: 'game_over', detail: `Player ${winnerIndex + 1} wins by forfeit!` }],
+        })
       }
     } else {
       this.state.spectatorIds.delete(conn.id)
@@ -83,14 +85,13 @@ export default class WheelsServer implements Party.Server {
     try {
       parsed = JSON.parse(message as string) as ClientMessage
     } catch {
-      sender.send(JSON.stringify({ type: 'ERROR', message: 'Invalid JSON' } satisfies ServerMessage))
+      this.sendTo(sender, { type: 'ERROR', message: 'Invalid JSON' })
       return
     }
 
-    // Validate sender is a player
     const playerIndex = this.state.players.findIndex(p => p.id === sender.id)
     if (playerIndex === -1) {
-      sender.send(JSON.stringify({ type: 'ERROR', message: 'Spectators cannot send actions' } satisfies ServerMessage))
+      this.sendTo(sender, { type: 'ERROR', message: 'Spectators cannot send actions' })
       return
     }
 
@@ -99,10 +100,13 @@ export default class WheelsServer implements Party.Server {
         this.handleSelectHeroes(parsed.heroes, playerIndex)
         break
       case 'SPIN':
-        this.handleSpin(playerIndex, sender)
+        this.handleSpin(playerIndex as 0 | 1, sender)
         break
       case 'LOCK_WHEEL':
-        this.handleLockWheel(parsed.index, playerIndex, sender)
+        this.handleLockWheel(parsed.index, playerIndex as 0 | 1, sender)
+        break
+      case 'CONFIRM':
+        this.handleConfirm(playerIndex as 0 | 1, sender)
         break
     }
   }
@@ -113,20 +117,20 @@ export default class WheelsServer implements Party.Server {
     this.state.players[playerIndex].heroes = heroes
     this.broadcastLobbyState()
 
-    // Check if both players have selected heroes
     if (this.state.players.every(p => p.heroes !== undefined)) {
       const p1Heroes = this.state.players[0].heroes!
       const p2Heroes = this.state.players[1].heroes!
 
       const game = createInitialGameState(this.state.seed, p1Heroes, p2Heroes)
-      const rng = createRng(this.state.seed)
-
-      // Run startTurn for the first turn
-      const { state: gameAfterStart, events } = startTurn(game)
-
-      this.state.game = gameAfterStart
-      this.state.rng = rng
+      this.state.rng = [
+        createRng(this.state.seed),
+        createRng(this.state.seed + 1),
+      ]
       this.state.phase = 'playing'
+
+      // Start the first round
+      const { state: gameAfterStart } = startRound(game)
+      this.state.game = gameAfterStart
 
       // Send MATCH_START to each connection with their yourPlayer value
       for (const conn of this.room.getConnections()) {
@@ -136,67 +140,160 @@ export default class WheelsServer implements Party.Server {
           connPlayerIndex === 1 ? 1 :
           'spectator'
 
-        const msg: ServerMessage = {
+        this.sendTo(conn, {
           type: 'MATCH_START',
           game: this.state.game,
           yourPlayer,
-        }
-        conn.send(JSON.stringify(msg))
+        })
       }
+
+      this.startSpinTimer()
     }
   }
 
-  private handleSpin(playerIndex: number, sender: Party.Connection) {
+  private handleSpin(playerIndex: 0 | 1, sender: Party.Connection) {
     if (this.state.phase !== 'playing' || !this.state.game || !this.state.rng) return
-
-    // Validate it's the current player's turn
-    if (playerIndex !== this.state.game.currentPlayer) {
-      sender.send(JSON.stringify({ type: 'ERROR', message: 'Not your turn' } satisfies ServerMessage))
+    if (this.state.game.roundPhase !== 'spinning') return
+    if (this.state.game.confirmed[playerIndex]) {
+      this.sendTo(sender, { type: 'ERROR', message: 'Already confirmed' })
       return
     }
 
-    this.state.game = spin(this.state.game, this.state.rng, WHEELS)
-    const spinIndices = this.state.game.wheels.resultIndices
-      ? [...this.state.game.wheels.resultIndices] as number[]
-      : undefined
+    const ws = this.state.game.wheels[playerIndex]
+    if (ws.spinsRemaining <= 0) {
+      this.sendTo(sender, { type: 'ERROR', message: 'No spins remaining' })
+      return
+    }
 
-    if (this.state.game.wheels.spinsRemaining === 0) {
-      // Auto-resolve, end turn, start next turn
-      const resolveResult = resolve(this.state.game)
-      this.state.game = resolveResult.state
-      const events = resolveResult.events
+    this.state.game = spin(this.state.game, playerIndex, this.state.rng[playerIndex], WHEELS)
 
-      if (this.state.game.phase === 'done') {
-        // Game over after resolution
-        this.state.phase = 'done'
-        this.broadcastStateUpdate(events, spinIndices)
-        return
-      }
+    // Send YOUR_WHEELS only to this player
+    const updatedWs = this.state.game.wheels[playerIndex]
+    this.sendTo(sender, {
+      type: 'YOUR_WHEELS',
+      wheels: updatedWs,
+      spinIndices: updatedWs.resultIndices ? [...updatedWs.resultIndices] : undefined,
+    })
+  }
 
-      this.state.game = endTurn(this.state.game)
-      const { state: nextTurnState, events: turnEvents } = startTurn(this.state.game)
-      this.state.game = nextTurnState
+  private handleLockWheel(index: number, playerIndex: 0 | 1, sender: Party.Connection) {
+    if (this.state.phase !== 'playing' || !this.state.game) return
+    if (this.state.game.roundPhase !== 'spinning') return
+    if (this.state.game.confirmed[playerIndex]) {
+      this.sendTo(sender, { type: 'ERROR', message: 'Already confirmed' })
+      return
+    }
 
-      this.broadcastStateUpdate([...events, ...turnEvents], spinIndices)
-    } else {
-      this.broadcastStateUpdate([], spinIndices)
+    this.state.game = lockWheel(this.state.game, playerIndex, index)
+
+    // Send updated wheel state only to this player
+    this.sendTo(sender, {
+      type: 'YOUR_WHEELS',
+      wheels: this.state.game.wheels[playerIndex],
+    })
+  }
+
+  private handleConfirm(playerIndex: 0 | 1, sender: Party.Connection) {
+    if (this.state.phase !== 'playing' || !this.state.game) return
+    if (this.state.game.roundPhase !== 'spinning') return
+    if (this.state.game.confirmed[playerIndex]) {
+      this.sendTo(sender, { type: 'ERROR', message: 'Already confirmed' })
+      return
+    }
+
+    this.state.game = confirmSpins(this.state.game, playerIndex)
+
+    // Notify the opponent that this player is ready
+    const opponentIndex = playerIndex === 0 ? 1 : 0
+    const opponentConn = this.getPlayerConnection(opponentIndex)
+    if (opponentConn) {
+      this.sendTo(opponentConn, { type: 'OPPONENT_READY' })
+    }
+
+    if (bothConfirmed(this.state.game)) {
+      this.proceedToRevealAndResolve()
     }
   }
 
-  private handleLockWheel(index: number, playerIndex: number, sender: Party.Connection) {
-    if (this.state.phase !== 'playing' || !this.state.game) return
+  private proceedToRevealAndResolve() {
+    if (!this.state.game) return
 
-    if (playerIndex !== this.state.game.currentPlayer) {
-      sender.send(JSON.stringify({ type: 'ERROR', message: 'Not your turn' } satisfies ServerMessage))
-      return
+    this.clearSpinTimer()
+
+    // Reveal phase: broadcast full game state with both wheels visible
+    this.state.game = revealWheels(this.state.game)
+    this.broadcast({ type: 'REVEAL', game: this.state.game })
+
+    // Resolve phase
+    const { state: resolvedState, events } = resolve(this.state.game)
+    this.state.game = resolvedState
+
+    this.broadcast({ type: 'RESOLVE_UPDATE', game: this.state.game, events })
+
+    if (this.state.game.winner !== null) {
+      // Game over
+      this.state.phase = 'done'
+    } else {
+      // Start next round
+      this.state.game = { ...this.state.game, round: this.state.game.round + 1 }
+      const { state: nextRoundState, events: roundEvents } = startRound(this.state.game)
+      this.state.game = nextRoundState
+
+      // Broadcast the new round state so clients know spinning has restarted
+      this.broadcast({ type: 'REVEAL', game: this.state.game })
+
+      this.startSpinTimer()
+    }
+  }
+
+  private startSpinTimer() {
+    this.clearSpinTimer()
+    this.state.spinTimer = setTimeout(() => {
+      this.onSpinTimerExpired()
+    }, SPIN_TIMEOUT_MS)
+  }
+
+  private clearSpinTimer() {
+    if (this.state.spinTimer !== null) {
+      clearTimeout(this.state.spinTimer)
+      this.state.spinTimer = null
+    }
+  }
+
+  private onSpinTimerExpired() {
+    this.state.spinTimer = null
+    if (!this.state.game || this.state.game.roundPhase !== 'spinning') return
+
+    // Auto-confirm any unconfirmed players
+    if (!this.state.game.confirmed[0]) {
+      this.state.game = confirmSpins(this.state.game, 0)
+    }
+    if (!this.state.game.confirmed[1]) {
+      this.state.game = confirmSpins(this.state.game, 1)
     }
 
-    this.state.game = lockWheel(this.state.game, index)
-    this.broadcastStateUpdate([])
+    this.proceedToRevealAndResolve()
+  }
+
+  private getPlayerConnection(playerIndex: number): Party.Connection | null {
+    const playerId = this.state.players[playerIndex]?.id
+    if (!playerId) return null
+    for (const conn of this.room.getConnections()) {
+      if (conn.id === playerId) return conn
+    }
+    return null
+  }
+
+  private sendTo(conn: Party.Connection, msg: ServerMessage) {
+    conn.send(JSON.stringify(msg))
+  }
+
+  private broadcast(msg: ServerMessage) {
+    this.room.broadcast(JSON.stringify(msg))
   }
 
   private broadcastLobbyState() {
-    const msg: ServerMessage = {
+    this.broadcast({
       type: 'LOBBY_STATE',
       players: this.state.players.map(p => ({
         id: p.id,
@@ -205,17 +302,6 @@ export default class WheelsServer implements Party.Server {
       })),
       spectators: this.state.spectatorIds.size,
       phase: this.state.phase,
-    }
-    this.room.broadcast(JSON.stringify(msg))
-  }
-
-  private broadcastStateUpdate(events: LogEvent[], spinIndices?: number[]) {
-    const msg: ServerMessage = {
-      type: 'STATE_UPDATE',
-      game: this.state.game!,
-      events,
-      spinIndices,
-    }
-    this.room.broadcast(JSON.stringify(msg))
+    })
   }
 }

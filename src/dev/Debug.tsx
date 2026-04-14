@@ -1,31 +1,18 @@
-import { useEffect, useRef, useState } from 'react'
-import { createActor } from 'xstate'
-import { turnMachine } from '../machine/turn'
+import { useEffect, useRef } from 'react'
 import { useGameStore } from '../store/game'
 import { useLogStore } from '../store/log'
-
-const actor = createActor(turnMachine)
-actor.start()
 
 export function Debug() {
   const game = useGameStore((s) => s.game)
   const spin = useGameStore((s) => s.spin)
   const lockWheel = useGameStore((s) => s.lockWheel)
-  const startTurn = useGameStore((s) => s.startTurn)
-  const resolveRoll = useGameStore((s) => s.resolveRoll)
-  const endTurn = useGameStore((s) => s.endTurn)
+  const confirmSpins = useGameStore((s) => s.confirmSpins)
+  const startRound = useGameStore((s) => s.startRound)
+  const resolveRound = useGameStore((s) => s.resolveRound)
   const events = useLogStore((s) => s.events)
   const clearLog = useLogStore((s) => s.clear)
 
-  const [machineState, setMachineState] = useState(actor.getSnapshot().value)
   const logRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const sub = actor.subscribe((snapshot) => {
-      setMachineState(snapshot.value)
-    })
-    return () => sub.unsubscribe()
-  }, [])
 
   useEffect(() => {
     if (logRef.current) {
@@ -33,36 +20,8 @@ export function Debug() {
     }
   }, [events])
 
-  const handleSpin = () => {
-    spin()
-    actor.send({ type: 'SPIN' })
-  }
-
-  const handleSettle = () => {
-    actor.send({ type: 'SETTLE_DONE' })
-  }
-
-  const handleResolve = () => {
-    resolveRoll()
-    actor.send({ type: 'RESOLVE_DONE' })
-  }
-
-  const handleActDone = () => {
-    actor.send({ type: 'ACT_DONE' })
-  }
-
-  const handleNextTurn = () => {
-    endTurn()
-    startTurn()
-    actor.send({ type: 'NEXT_TURN' })
-  }
-
-  const handleGameOver = () => {
-    actor.send({ type: 'GAME_OVER' })
-  }
-
-  const cp = game.players[game.currentPlayer]
-  const op = game.players[game.currentPlayer === 0 ? 1 : 0]
+  const p1 = game.players[0]
+  const p2 = game.players[1]
 
   return (
     <div
@@ -81,36 +40,60 @@ export function Debug() {
     >
       {/* Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #0F172A', paddingBottom: '6px' }}>
-        <span>TURN {String(game.turn).padStart(2, '0')} | P{game.currentPlayer + 1}</span>
-        <span>FSM: {String(machineState).toUpperCase()}</span>
-        <span>{game.phase.toUpperCase()}</span>
+        <span>ROUND {String(game.round).padStart(2, '0')}</span>
+        <span>{game.roundPhase.toUpperCase()}</span>
+        <span>CONFIRMED: P1={game.confirmed[0] ? 'Y' : 'N'} P2={game.confirmed[1] ? 'Y' : 'N'}</span>
       </div>
 
       {/* Players */}
       <div style={{ display: 'flex', gap: '12px' }}>
-        <PlayerPanel label="CURRENT" player={cp} />
-        <PlayerPanel label="OPPONENT" player={op} />
+        <PlayerPanel label="PLAYER 1" player={p1} />
+        <PlayerPanel label="PLAYER 2" player={p2} />
       </div>
 
-      {/* Wheels */}
+      {/* Wheels P1 */}
       <div style={{ borderTop: '1px solid #334155', paddingTop: '8px' }}>
-        <div style={{ marginBottom: '6px' }}>WHEELS (spins: {game.wheels.spinsRemaining})</div>
+        <div style={{ marginBottom: '6px' }}>P1 WHEELS (spins: {game.wheels[0].spinsRemaining})</div>
         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {[0, 1, 2, 3, 4].map((i) => (
             <button
               key={i}
-              onClick={() => lockWheel(i)}
+              onClick={() => lockWheel(0, i)}
               style={{
                 fontFamily: 'inherit',
                 fontSize: '10px',
                 padding: '4px 6px',
-                border: `1px solid ${game.wheels.locked[i] ? '#6D28D9' : '#334155'}`,
-                background: game.wheels.locked[i] ? '#DBEAFE' : 'transparent',
+                border: `1px solid ${game.wheels[0].locked[i] ? '#6D28D9' : '#334155'}`,
+                background: game.wheels[0].locked[i] ? '#DBEAFE' : 'transparent',
                 cursor: 'pointer',
               }}
             >
-              W{i + 1}: {game.wheels.results ? `${game.wheels.results[i].symbol[0].toUpperCase()}${game.wheels.results[i].count > 1 ? game.wheels.results[i].count : ''}${game.wheels.results[i].xp ? '+' : ''}` : '--'}
-              {game.wheels.locked[i] ? ' [L]' : ''}
+              W{i + 1}: {game.wheels[0].results ? `${game.wheels[0].results[i].symbol[0].toUpperCase()}${game.wheels[0].results[i].count > 1 ? game.wheels[0].results[i].count : ''}${game.wheels[0].results[i].xp ? '+' : ''}` : '--'}
+              {game.wheels[0].locked[i] ? ' [L]' : ''}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Wheels P2 */}
+      <div style={{ borderTop: '1px solid #334155', paddingTop: '8px' }}>
+        <div style={{ marginBottom: '6px' }}>P2 WHEELS (spins: {game.wheels[1].spinsRemaining})</div>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+          {[0, 1, 2, 3, 4].map((i) => (
+            <button
+              key={i}
+              onClick={() => lockWheel(1, i)}
+              style={{
+                fontFamily: 'inherit',
+                fontSize: '10px',
+                padding: '4px 6px',
+                border: `1px solid ${game.wheels[1].locked[i] ? '#6D28D9' : '#334155'}`,
+                background: game.wheels[1].locked[i] ? '#DBEAFE' : 'transparent',
+                cursor: 'pointer',
+              }}
+            >
+              W{i + 1}: {game.wheels[1].results ? `${game.wheels[1].results[i].symbol[0].toUpperCase()}${game.wheels[1].results[i].count > 1 ? game.wheels[1].results[i].count : ''}${game.wheels[1].results[i].xp ? '+' : ''}` : '--'}
+              {game.wheels[1].locked[i] ? ' [L]' : ''}
             </button>
           ))}
         </div>
@@ -118,13 +101,12 @@ export function Debug() {
 
       {/* Actions */}
       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', borderTop: '1px solid #334155', paddingTop: '8px' }}>
-        <ActionButton label="START TURN" onClick={() => { startTurn(); clearLog() }} />
-        <ActionButton label="SPIN" onClick={handleSpin} />
-        <ActionButton label="SETTLE" onClick={handleSettle} />
-        <ActionButton label="RESOLVE" onClick={handleResolve} />
-        <ActionButton label="ACT DONE" onClick={handleActDone} />
-        <ActionButton label="NEXT TURN" onClick={handleNextTurn} />
-        <ActionButton label="GAME OVER" onClick={handleGameOver} />
+        <ActionButton label="START ROUND" onClick={() => { startRound(); clearLog() }} />
+        <ActionButton label="SPIN P1" onClick={() => spin(0)} />
+        <ActionButton label="SPIN P2" onClick={() => spin(1)} />
+        <ActionButton label="CONFIRM P1" onClick={() => confirmSpins(0)} />
+        <ActionButton label="CONFIRM P2" onClick={() => confirmSpins(1)} />
+        <ActionButton label="RESOLVE" onClick={() => resolveRound()} />
       </div>
 
       {/* Log */}

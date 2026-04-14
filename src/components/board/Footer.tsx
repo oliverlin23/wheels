@@ -3,16 +3,22 @@ import type { FC } from 'react'
 type FooterProps = {
   spinsRemaining: number
   onSpin: () => void
+  onConfirm: () => void
   canSpin: boolean
+  canConfirm: boolean
+  confirmed: boolean
 }
 
-export const Footer: FC<FooterProps> = ({ spinsRemaining, onSpin, canSpin }) => {
+export const Footer: FC<FooterProps> = ({ spinsRemaining, onSpin, onConfirm, canSpin, canConfirm, confirmed }) => {
   const ink = 'var(--color-ink)'
   const inkMid = 'var(--color-ink-mid)'
   const maxSpins = 3
 
-  const buttonColor = canSpin ? ink : inkMid
-  const buttonCursor = canSpin ? 'pointer' : 'default'
+  const spinColor = canSpin ? ink : inkMid
+  const spinCursor = canSpin ? 'pointer' : 'default'
+
+  const confirmColor = canConfirm ? ink : inkMid
+  const confirmCursor = canConfirm ? 'pointer' : 'default'
 
   const pips = Array.from({ length: maxSpins }, (_, i) => {
     const filled = i < spinsRemaining
@@ -22,7 +28,7 @@ export const Footer: FC<FooterProps> = ({ spinsRemaining, onSpin, canSpin }) => 
         style={{
           width: 8,
           height: 4,
-          backgroundColor: filled ? ink : ink,
+          backgroundColor: ink,
           opacity: filled ? 1 : 0.15,
           marginLeft: i > 0 ? 2 : 0,
         }}
@@ -51,14 +57,14 @@ export const Footer: FC<FooterProps> = ({ spinsRemaining, onSpin, canSpin }) => 
         style={{
           position: 'relative',
           padding: '2px 12px',
-          border: `1px solid ${buttonColor}`,
-          outline: `1px solid ${buttonColor}`,
+          border: `1px solid ${spinColor}`,
+          outline: `1px solid ${spinColor}`,
           outlineOffset: 2,
           fontSize: 10,
           fontWeight: 400,
           textTransform: 'uppercase',
-          color: buttonColor,
-          cursor: buttonCursor,
+          color: spinColor,
+          cursor: spinCursor,
           fontFamily: '"IBM Plex Mono", monospace',
           fontFeatureSettings: '"tnum"',
           userSelect: 'none',
@@ -86,6 +92,26 @@ export const Footer: FC<FooterProps> = ({ spinsRemaining, onSpin, canSpin }) => 
         <span>
           {spinCountStr}/{String(maxSpins).padStart(2, '0')}
         </span>
+      </div>
+
+      {/* CONFIRM button */}
+      <div
+        onClick={canConfirm ? onConfirm : undefined}
+        style={{
+          position: 'relative',
+          padding: '2px 12px',
+          border: `1px solid ${confirmed ? 'var(--color-ink-mid)' : confirmColor}`,
+          fontSize: 10,
+          fontWeight: 400,
+          textTransform: 'uppercase',
+          color: confirmed ? 'var(--color-ink-mid)' : confirmColor,
+          cursor: confirmed ? 'default' : confirmCursor,
+          fontFamily: '"IBM Plex Mono", monospace',
+          fontFeatureSettings: '"tnum"',
+          userSelect: 'none',
+        }}
+      >
+        {confirmed ? '[ READY ]' : '[ CONFIRM ]'}
       </div>
     </div>
   )

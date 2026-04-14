@@ -48,10 +48,10 @@ export type WheelState = {
 
 export type GameState = {
   players: [PlayerState, PlayerState]
-  currentPlayer: 0 | 1
-  turn: number
-  wheels: WheelState
-  phase: 'spinning' | 'resolving' | 'done'
+  wheels: [WheelState, WheelState]
+  round: number
+  roundPhase: 'spinning' | 'reveal' | 'resolving' | 'done'
+  confirmed: [boolean, boolean]
   winner: 0 | 1 | 'tie' | null
 }
 

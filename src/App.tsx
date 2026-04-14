@@ -37,10 +37,10 @@ function App() {
 
   // Watch for game over during match
   useEffect(() => {
-    if (screen === 'match' && game.winner !== null) {
+    if (screen === 'match' && game.winner !== null && game.roundPhase === 'done') {
       setScreen('match-end')
     }
-  }, [screen, game.winner])
+  }, [screen, game.winner, game.roundPhase])
 
   const handleCreateRoom = useCallback(() => {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
@@ -125,7 +125,7 @@ function App() {
             <MatchEnd
               winner={game.winner ?? 0}
               myPlayer={myPlayer}
-              turn={game.turn}
+              turn={game.round}
               onPlayAgain={handlePlayAgain}
               onMainMenu={handleMainMenu}
             />

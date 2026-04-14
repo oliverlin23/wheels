@@ -1,15 +1,13 @@
 import type { FC } from 'react'
 
 type MidlineRulesProps = {
-  currentPlayer: 0 | 1
-  turn: number
+  round: number
+  roundPhase: 'spinning' | 'reveal' | 'resolving' | 'done'
 }
 
-export const MidlineRules: FC<MidlineRulesProps> = ({ currentPlayer }) => {
+export const MidlineRules: FC<MidlineRulesProps> = ({ roundPhase }) => {
   const violet = 'var(--color-midline-violet)'
   const paper = 'var(--color-paper)'
-  const blueInk = 'var(--color-blue-ink)'
-  const redInk = 'var(--color-red-ink)'
 
   const ruleStyle: React.CSSProperties = {
     position: 'absolute',
@@ -19,9 +17,11 @@ export const MidlineRules: FC<MidlineRulesProps> = ({ currentPlayer }) => {
     backgroundColor: violet,
   }
 
-  const turnLabel =
-    currentPlayer === 0 ? '◀ PLAYER 01' : 'OPPONENT 02 ▶'
-  const turnColor = currentPlayer === 0 ? blueInk : redInk
+  const phaseLabel =
+    roundPhase === 'spinning' ? 'SPINNING'
+    : roundPhase === 'reveal' ? 'REVEAL'
+    : roundPhase === 'resolving' ? 'RESOLVING'
+    : 'DONE'
 
   return (
     <div
@@ -60,24 +60,24 @@ export const MidlineRules: FC<MidlineRulesProps> = ({ currentPlayer }) => {
       {/* Lower rule */}
       <div style={{ ...ruleStyle, top: 12 }} />
 
-      {/* Turn indicator */}
+      {/* Phase indicator */}
       <div
         style={{
           position: 'absolute',
-          top: currentPlayer === 0 ? 12 - 5 : -5,
+          top: -5,
           right: 8,
           fontFamily: '"IBM Plex Mono", monospace',
           fontSize: 7,
           fontWeight: 400,
           textTransform: 'uppercase',
-          color: turnColor,
+          color: violet,
           backgroundColor: paper,
           padding: '0 4px',
           whiteSpace: 'nowrap',
           fontFeatureSettings: '"tnum"',
         }}
       >
-        {turnLabel}
+        {phaseLabel}
       </div>
     </div>
   )

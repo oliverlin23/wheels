@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { resolve } from '../src/game/rules/resolve'
-import type { GameState, HeroState, Panel, PlayerState } from '../src/game/types'
+import type { GameState, HeroState, Panel, PlayerState, WheelState } from '../src/game/types'
 
 function makeHero(
   name: HeroState['name'],
@@ -29,17 +29,22 @@ function makePlayer(overrides: Partial<PlayerState> = {}): PlayerState {
   }
 }
 
+function makeWheelState(results: [Panel, Panel, Panel, Panel, Panel] | null = null): WheelState {
+  return {
+    spinsRemaining: 0,
+    locked: [true, true, true, true, true],
+    results,
+    resultIndices: results ? [0, 0, 0, 0, 0] : null,
+  }
+}
+
 function makeState(overrides: Partial<GameState> = {}): GameState {
   return {
     players: [makePlayer(), makePlayer()],
-    currentPlayer: 0,
-    turn: 1,
-    wheels: {
-      spinsRemaining: 0,
-      locked: [true, true, true, true, true],
-      results: null,
-    },
-    phase: 'resolving',
+    round: 1,
+    wheels: [makeWheelState(), makeWheelState()],
+    roundPhase: 'resolving',
+    confirmed: [true, true],
     winner: null,
     ...overrides,
   }
@@ -58,18 +63,15 @@ describe('resolve', () => {
   })
 
   it('Step 1: grants XP from starry panels', () => {
+    const results: [Panel, Panel, Panel, Panel, Panel] = [
+      p('square', 1, true),   // XP for squares hero
+      p('diamond', 1, true),  // XP for diamonds hero
+      p('hammer', 1, false),
+      p('hammer', 1, false),
+      p('square', 1, false),
+    ]
     const state = makeState({
-      wheels: {
-        spinsRemaining: 0,
-        locked: [true, true, true, true, true],
-        results: [
-          p('square', 1, true),   // XP for squares hero
-          p('diamond', 1, true),  // XP for diamonds hero
-          p('hammer', 1, false),
-          p('hammer', 1, false),
-          p('square', 1, false),
-        ],
-      },
+      wheels: [makeWheelState(results), makeWheelState()],
     })
     const result = resolve(state)
     // Squares hero (warrior) should have 1 XP
@@ -87,7 +89,7 @@ describe('resolve', () => {
       p('diamond', 1, false),
     ]
     const state = makeState({
-      wheels: { spinsRemaining: 0, locked: [true, true, true, true, true], results },
+      wheels: [makeWheelState(results), makeWheelState()],
     })
     const result = resolve(state)
     // 3 hammers - 2 = 1 bulwark
@@ -103,7 +105,7 @@ describe('resolve', () => {
       p('diamond', 1, false),
     ]
     const state = makeState({
-      wheels: { spinsRemaining: 0, locked: [true, true, true, true, true], results },
+      wheels: [makeWheelState(results), makeWheelState()],
     })
     const result = resolve(state)
     // 3 squares - 2 = 1 energy for warrior (squares slot)
@@ -121,7 +123,7 @@ describe('resolve', () => {
       p('hammer', 1, false),
     ]
     const state = makeState({
-      wheels: { spinsRemaining: 0, locked: [true, true, true, true, true], results },
+      wheels: [makeWheelState(results), makeWheelState()],
     })
     // Warrior costs 3 energy. 5 squares - 2 = 3 energy. Should activate.
     const result = resolve(state)
@@ -152,7 +154,7 @@ describe('resolve', () => {
     ]
     const state = makeState({
       players: [player1, player2],
-      wheels: { spinsRemaining: 0, locked: [true, true, true, true, true], results },
+      wheels: [makeWheelState(results), makeWheelState()],
     })
     // Assassin has enough energy (3/3), should act in step 4
     // 3 diamonds - 2 = 1 energy for warrior (diamonds slot), total 3/3, warrior activates in step 8
@@ -180,7 +182,7 @@ describe('resolve', () => {
     ]
     const state = makeState({
       players: [player1, makePlayer()],
-      wheels: { spinsRemaining: 0, locked: [true, true, true, true, true], results },
+      wheels: [makeWheelState(results), makeWheelState()],
     })
     const result = resolve(state)
     // Priest heals 1 crown HP (7 -> 8)
@@ -208,7 +210,7 @@ describe('resolve', () => {
     ]
     const state = makeState({
       players: [player1, makePlayer()],
-      wheels: { spinsRemaining: 0, locked: [true, true, true, true, true], results },
+      wheels: [makeWheelState(results), makeWheelState()],
     })
     const result = resolve(state)
     // Engineer bronze deals 1 crown damage (opponent no bulwark)
@@ -234,13 +236,13 @@ describe('resolve', () => {
     ]
     const state = makeState({
       players: [player1, player2],
-      wheels: { spinsRemaining: 0, locked: [true, true, true, true, true], results },
+      wheels: [makeWheelState(results), makeWheelState()],
     })
     const result = resolve(state)
     // Warrior bronze does 3 crown damage, killing opponent (3 -> 0)
     expect(result.state.players[1].crownHp).toBe(0)
     expect(result.state.winner).toBe(0)
-    expect(result.state.phase).toBe('done')
+    expect(result.state.roundPhase).toBe('done')
   })
 
   it('Step 10: tie when both crowns die same round', () => {
@@ -263,11 +265,11 @@ describe('resolve', () => {
     ]
     const state = makeState({
       players: [player1, player2],
-      wheels: { spinsRemaining: 0, locked: [true, true, true, true, true], results },
+      wheels: [makeWheelState(results), makeWheelState()],
     })
     const result = resolve(state)
     expect(result.state.winner).toBe('tie')
-    expect(result.state.phase).toBe('done')
+    expect(result.state.roundPhase).toBe('done')
   })
 
   it('XP rank-up triggers bomb that deals damage', () => {
@@ -287,14 +289,10 @@ describe('resolve', () => {
     ]
     const state = makeState({
       players: [player1, makePlayer()],
-      wheels: { spinsRemaining: 0, locked: [true, true, true, true, true], results },
+      wheels: [makeWheelState(results), makeWheelState()],
     })
     const result = resolve(state)
     // Bomb deals 2 crown damage to opponent
-    // The bomb from panel XP triggers... let's check when it resolves
-    // Panel XP bombs are pending, resolved after step 6 (step 7)
-    // But actually looking at the code, panel XP bombs get added to pendingBombs
-    // which resolve at step 7
     const bombEvents = result.events.filter(e => e.type === 'bomb')
     expect(bombEvents.length).toBeGreaterThanOrEqual(1)
   })
@@ -308,7 +306,7 @@ describe('resolve', () => {
       p('diamond', 2, false), // DD = 2, total = 4
     ]
     const state = makeState({
-      wheels: { spinsRemaining: 0, locked: [true, true, true, true, true], results },
+      wheels: [makeWheelState(results), makeWheelState()],
     })
     const result = resolve(state)
     // 5 squares - 2 = 3 energy for warrior (cost 3) -> activates
@@ -344,23 +342,10 @@ describe('resolve', () => {
     ]
     const state = makeState({
       players: [player1, player2],
-      wheels: { spinsRemaining: 0, locked: [true, true, true, true, true], results },
+      wheels: [makeWheelState(results), makeWheelState()],
     })
 
     const result = resolve(state)
-
-    // Step 1: Mage gets 1 XP from starry panel (5 + 1 = 6)
-    // Step 3: 4 squares - 2 = 2 energy for mage (3 + 2 = 5, cost 4) -> activates!
-    //         1 diamond = 0 energy for priest (below threshold)
-    // Step 5: Priest has 4 energy (cost 4) -> activates!
-    //         Heals 1 crown HP (8 -> 9)
-    //         Grants 1 energy to mage (but mage already activated, energy is 0, so 0 + 1 = 1)
-    //         Priest gets 2 XP (3 + 2 = 5)
-    // Step 8: Mage activated in step 3, energy was reset. Energy is now 1 from priest.
-    //         Mage does NOT re-activate (1 < 4)
-    //         Actually wait -- mage activates in step 8 (it's a "remaining hero")
-    //         Let me re-check: step 3 adds energy. If energy >= cost, addEnergy returns activated=true
-    //         and resets energy to 0. The mage activation happens in step 8.
 
     // Mage silver: ground fireball (4 crown/3 bulwark), high fireball (2 crown)
     // Opponent has bulwark 2:
@@ -380,5 +365,38 @@ describe('resolve', () => {
 
     // Mage energy: had 3 + 2 (from panels) = 5, then priest gave 1 = 6, then activated (reset to 0)
     expect(result.state.players[0].heroes[0].energy).toBe(0)
+  })
+
+  it('resolves both players wheels in a single round', () => {
+    // Player 0 has warrior ready to attack
+    const player1 = makePlayer({
+      heroes: [
+        makeHero('warrior', 'squares', { energy: 3, rank: 'bronze' }),
+        makeHero('archer', 'diamonds'),
+      ],
+    })
+    // Player 1 has warrior ready to attack
+    const player2 = makePlayer({
+      heroes: [
+        makeHero('warrior', 'squares', { energy: 3, rank: 'bronze' }),
+        makeHero('archer', 'diamonds'),
+      ],
+    })
+    const emptyResults: [Panel, Panel, Panel, Panel, Panel] = [
+      p('square', 1, false),
+      p('diamond', 1, false),
+      p('hammer', 1, false),
+      p('hammer', 1, false),
+      p('square', 1, false),
+    ]
+    const state = makeState({
+      players: [player1, player2],
+      wheels: [makeWheelState(emptyResults), makeWheelState(emptyResults)],
+    })
+    const result = resolve(state)
+    // Both warriors activate (they had enough pre-loaded energy)
+    // Each deals 3 crown damage to the opponent
+    expect(result.state.players[0].crownHp).toBe(7) // hit by player 1's warrior
+    expect(result.state.players[1].crownHp).toBe(7) // hit by player 0's warrior
   })
 })
