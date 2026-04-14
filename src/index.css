@@ -1,0 +1,50 @@
+@import "tailwindcss";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/700.css";
+@import "@fontsource/space-grotesk/400.css";
+@import "@fontsource/space-grotesk/700.css";
+@import "@fontsource/press-start-2p/400.css";
+
+@theme {
+  --color-paper: #F5F1E8;
+  --color-paper-dim: #EDE7D6;
+  --color-ink: #0F172A;
+  --color-ink-mid: #334155;
+  --color-blue-ink: #1E40AF;
+  --color-blue-wash: #DBEAFE;
+  --color-red-ink: #B91C1C;
+  --color-red-wash: #FEE2E2;
+  --color-square-gold: #D97706;
+  --color-diamond-teal: #0F766E;
+  --color-hammer-steel: #475569;
+  --color-midline-violet: #6D28D9;
+  --color-bypass-magenta: #BE185D;
+  --color-rank-bronze: #92400E;
+  --color-rank-silver: #64748B;
+  --color-rank-gold: #B45309;
+
+  --font-mono: "IBM Plex Mono", monospace;
+  --font-sans: "Space Grotesk", sans-serif;
+  --font-pixel: "Press Start 2P", cursive;
+}
+
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--color-paper);
+}
+
+.font-mono {
+  font-feature-settings: "tnum";
+}
