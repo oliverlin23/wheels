@@ -44,23 +44,35 @@ Wheel 5 has no blanks. It contains 2 Square panels, 3 Diamond panels, 2 Hammer p
 
 ---
 
-## Turn Structure
+## Round Structure
 
-Each turn consists of two phases: **Bulwark Decay**, then **Spinning**.
+The game uses **simultaneous rounds**, not alternating turns. Each round consists of three phases: **Bulwark Decay**, **Spinning** (simultaneous), and **Resolution**.
 
 ### Bulwark Decay
 
-At the start of your turn, before spinning, your Bulwark loses **1 height/HP**. If your Bulwark is already at 0, nothing happens.
+At the start of each round, **both players'** Bulwarks lose **1 height/HP**. If a Bulwark is already at 0, nothing happens.
 
-### Spinning
+### Spinning (Simultaneous)
 
-The player performs up to **3 spins**:
+Both players spin their wheels at the same time, with a **60-second timer**. Each player has their own set of 5 wheels.
 
-1. **First spin**: All 5 wheels must be spun.
-2. **Second spin**: The player may **lock** any wheels showing desirable results. Unlocked wheels are re-spun.
-3. **Third spin**: Same as above. Results are finalized after the third spin.
+Each player performs up to **3 spins**:
 
-A player can end their turn early by **locking all 5 wheels** after the 1st or 2nd spin. After resolving the final roll, the opponent takes their turn.
+1. **First spin**: All 5 of your wheels are spun.
+2. **Second spin**: You may **lock** any of your wheels showing desirable results. Unlocked wheels are re-spun.
+3. **Third spin**: Same as above.
+
+During spinning, **you can only see your own wheel results**. Your opponent's wheels are hidden.
+
+A player can **confirm** early (after at least one spin) to signal they are done. When both players have confirmed (or the 60-second timer expires), the spinning phase ends.
+
+### Resolution
+
+After both players' wheels are finalized, results are **revealed** to everyone. Resolution then processes both players' results:
+
+1. **Player 1's wheels** are resolved (steps 1-9 below), applying effects to both players.
+2. **Player 2's wheels** are resolved (steps 1-9 below), applying effects to both players.
+3. **Step 10**: Simultaneous 0 HP check for both players.
 
 ---
 

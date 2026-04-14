@@ -3,8 +3,35 @@
 A phased plan for building the web game from the existing rules and visual design docs. Each phase is independently shippable and produces something you can look at or play with. Later phases depend only on earlier ones.
 
 Companion docs:
-- `wheels-rules-sea-of-stars.md` — the rebalanced rules.
-- `wheels-visual-design.md` — visual + animation spec.
+- `wheels-rules-sea-of-stars.md` -- the rebalanced rules.
+- `wheels-visual-design.md` -- visual + animation spec.
+
+---
+
+## Progress
+
+- [x] Phase 0 -- Repository Scaffold
+- [x] Phase 1 -- Game Model and Rule Engine
+- [x] Phase 2 -- State Layer
+- [x] Phase 3 -- Static Board Layout
+- [x] Phase 4 -- Sprite Pipeline
+- [x] Phase 5 -- Wheels (3D)
+- [ ] Phase 6 -- Figurine Activation (skipped, waiting for final sprite art)
+- [x] Phase 7 -- Juice Pass (animation primitives + resolution log)
+- [x] Phase 8 -- Menus, Match End, Accessibility
+- [ ] Phase 9 -- Sound
+- [ ] Phase 10 -- Balance Tooling + Polish
+- [x] Multiplayer -- PartyKit server, simultaneous turns, lobby system
+
+### Major Architecture Change: Simultaneous Turns
+
+The original plan assumed alternating turns (`currentPlayer`). This was changed to **simultaneous turns**: both players spin at the same time (60s timer), wheels are hidden from opponents during spinning, then revealed and resolved together. There is no "current player." See the rules doc and README for details.
+
+### Stack Updates
+
+- **Multiplayer**: PartyKit (WebSocket rooms, server-authoritative game state)
+- **Game state**: Zustand only (XState FSM removed from main flow, kept in debug only)
+- **Sprite pipeline**: Programmatic generation via @napi-rs/canvas (Aseprite optional for final art)
 
 ---
 
@@ -12,12 +39,13 @@ Companion docs:
 
 - **Runtime**: React 18 + TypeScript + Vite.
 - **3D**: Three.js + react-three-fiber (@react-three/fiber) + @react-three/drei for helpers. `THREE.NearestFilter` everywhere on textures.
-- **Game state**: Zustand for canonical state. XState for the turn-flow finite state machine.
-- **Styling**: Tailwind CSS with a custom theme matching the palette tokens from the visual design doc. Grid overlay as a fixed-position SVG.
-- **Sprite pipeline**: Aseprite CLI exports JSON atlases + PNG sprite sheets. Custom React `<Sprite>` component reads the atlas.
+- **Game state**: Zustand for canonical state.
+- **Multiplayer**: PartyKit for WebSocket rooms and server-authoritative game logic.
+- **Styling**: Tailwind CSS v4 with a custom theme matching the palette tokens from the visual design doc. Grid overlay as a fixed-position SVG.
+- **Sprite pipeline**: @napi-rs/canvas for programmatic placeholder sprites. Aseprite for final art (optional).
 - **Audio**: Howler.js.
-- **Testing**: Vitest for unit tests (rule engine), Playwright for end-to-end (one-turn flow), a dedicated headless simulator binary for balance.
-- **Package manager**: pnpm. (If you prefer npm/yarn, substitute consistently.)
+- **Testing**: Vitest for unit tests (rule engine), Playwright for end-to-end (planned).
+- **Package manager**: pnpm.
 - **Lint / format**: ESLint + Prettier, strict TS config.
 
 ---
