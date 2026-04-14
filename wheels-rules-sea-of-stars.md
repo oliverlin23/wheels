@@ -162,61 +162,73 @@ Six figurines total. Each has a Crown damage value, Bulwark damage value (or equ
 
 Ground-level attack. High damage to both Crown and Bulwark, but always hits the Bulwark if one exists (attack height is at ground level).
 
-| Rank | Energy | Crown Dmg | Bulwark Dmg |
-|---|---|---|---|
-| Bronze | 3 | 3 | 3 |
-| Silver | 3 | 5 | 5 |
-| Gold | 3 | 7 | 5 |
+
+| Rank   | Energy | Crown Dmg | Bulwark Dmg |
+| ------ | ------ | --------- | ----------- |
+| Bronze | 3      | 3         | 3           |
+| Silver | 3      | 5         | 5           |
+| Gold   | 3      | 7         | 5           |
+
 
 ### Mage
 
 Attacks **twice** per activation. First fireball: ground level (blocked by any Bulwark). Second fireball: **height 6** (always hits Crown, since max Bulwark is 5). The two fireballs have **different damage values**: the ground-level fireball hits harder, rewarding players who strip the opponent's Bulwark first.
 
-| Rank | Energy | Ground Fireball (Crown/Bulwark) | High Fireball (Crown only) |
-|---|---|---|---|
-| Bronze | 5 | 2 / 2 | 1 |
-| Silver | 4 | 4 / 3 | 2 |
-| Gold | 4 | 6 / 4 | 3 |
+
+| Rank   | Energy | Ground Fireball (Crown/Bulwark) | High Fireball (Crown only) |
+| ------ | ------ | ------------------------------- | -------------------------- |
+| Bronze | 5      | 2 / 2                           | 1                          |
+| Silver | 4      | 4 / 3                           | 2                          |
+| Gold   | 4      | 6 / 4                           | 3                          |
+
 
 ### Archer
 
 Arrow flies at **height 3**. Hits Crown when Bulwark is 2 or less; otherwise hits Bulwark. Strong Crown damage, weak Bulwark damage.
 
-| Rank | Energy | Crown Dmg | Bulwark Dmg |
-|---|---|---|---|
-| Bronze | 4 | 3 | 1 |
-| Silver | 3 | 4 | 2 |
-| Gold | 3 | 6 | 3 |
+
+| Rank   | Energy | Crown Dmg | Bulwark Dmg |
+| ------ | ------ | --------- | ----------- |
+| Bronze | 4      | 3         | 1           |
+| Silver | 3      | 4         | 2           |
+| Gold   | 3      | 6         | 3           |
+
 
 ### Engineer
 
 Attacks the opponent AND raises own Bulwark by **2** on each activation. Weak Crown damage, strong Bulwark damage.
 
-| Rank | Energy | Crown Dmg | Bulwark Dmg |
-|---|---|---|---|
-| Bronze | 4 | 1 | 3 |
-| Silver | 4 | 2 | 5 |
-| Gold | 3 | 4 | 5 |
+
+| Rank   | Energy | Crown Dmg | Bulwark Dmg |
+| ------ | ------ | --------- | ----------- |
+| Bronze | 4      | 1         | 3           |
+| Silver | 4      | 2         | 5           |
+| Gold   | 3      | 4         | 5           |
+
 
 ### Assassin
 
 **Ignores Bulwark entirely.** Deals direct Crown damage, **delays** the opponent's Hero closest to activating (removes energy from it), and **strips 1 Bulwark** from the opponent. Low damage, high disruption and wall-breaking utility.
 
-| Rank | Energy | Crown Dmg | Delay (energy removed) | Bulwark Stripped |
-|---|---|---|---|---|
-| Bronze | 3 | 1 | 1 | 1 |
-| Silver | 3 | 2 | 1 | 1 |
-| Gold | 3 | 2 | 2 | 1 |
+
+| Rank   | Energy | Crown Dmg | Delay (energy removed) | Bulwark Stripped |
+| ------ | ------ | --------- | ---------------------- | ---------------- |
+| Bronze | 3      | 1         | 1                      | 1                |
+| Silver | 3      | 2         | 1                      | 1                |
+| Gold   | 3      | 2         | 2                      | 1                |
+
 
 ### Priest
 
 **Does not attack.** Heals own Crown and grants energy to the other friendly Hero.
 
-| Rank | Energy | Healing | Energy Granted |
-|---|---|---|---|
-| Bronze | 4 | 1 | 1 |
-| Silver | 3 | 1 | 1 |
-| Gold | 3 | 2 | 2 |
+
+| Rank   | Energy | Healing | Energy Granted |
+| ------ | ------ | ------- | -------------- |
+| Bronze | 4      | 1       | 1              |
+| Silver | 3      | 1       | 1              |
+| Gold   | 3      | 2       | 2              |
+
 
 Crown HP cannot be healed above **12**.
 

@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(COREPACK_ENABLE_STRICT=0 corepack prepare pnpm@latest --activate)",
+      "Read(//private/tmp/**)",
+      "Bash(pnpm create:*)",
+      "Bash(cp -rn /tmp/wheels-temp/* /Users/olive/Coding/GitHub/wheels/)",
+      "Bash(cp /tmp/wheels-temp/.gitignore /Users/olive/Coding/GitHub/wheels/.gitignore)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm build:*)",
+      "Bash(git:*)",
+      "Bash(pnpm approve-builds:*)",
+      "Bash(pnpm config:*)",
+      "Bash(node:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(npx vitest:*)"
+    ]
+  }
+}

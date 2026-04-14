@@ -18,6 +18,7 @@ export function startTurn(state: GameState): { state: GameState; events: LogEven
         spinsRemaining: 3,
         locked: [false, false, false, false, false],
         results: null,
+        resultIndices: null,
       },
     },
     events,

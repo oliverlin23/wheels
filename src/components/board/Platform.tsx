@@ -1,5 +1,7 @@
 import type { HeroState } from '../../game/types'
 import { getStats } from '../../game/rules/figurines'
+import { Sprite } from '../Sprite'
+import atlas from '../../sprites/atlas.json'
 
 const XP_THRESHOLD = 10
 
@@ -13,10 +15,6 @@ const RANK_COLORS: Record<string, string> = {
   gold: 'var(--color-rank-gold)',
 }
 
-const SLOT_COLORS: Record<string, string> = {
-  squares: 'var(--color-square-gold)',
-  diamonds: 'var(--color-diamond-teal)',
-}
 
 function BarSegments({
   filled,
@@ -77,7 +75,6 @@ function BarSegments({
 export default function Platform({ hero }: PlatformProps) {
   const stats = getStats(hero.name, hero.rank)
   const rankColor = RANK_COLORS[hero.rank]
-  const slotColor = SLOT_COLORS[hero.slot]
 
   return (
     <div
@@ -89,19 +86,13 @@ export default function Platform({ hero }: PlatformProps) {
         position: 'relative',
       }}
     >
-      {/* Placeholder figurine rectangle */}
-      <div
-        style={{
-          width: 16,
-          height: 16,
-          backgroundColor: slotColor,
-          opacity: 0.3,
-          border: '1px dashed var(--color-ink)',
-          position: 'relative',
-          zIndex: 2,
-          marginBottom: -2,
-        }}
-      />
+      {/* Figurine sprite */}
+      <div style={{ position: 'relative', zIndex: 2, marginBottom: -2 }}>
+        <Sprite
+          src={`/sprites/${hero.name}.png`}
+          frame={(atlas as Record<string, Record<string, { x: number; y: number; w: number; h: number }>>)[hero.name]['idle']}
+        />
+      </div>
 
       {/* Oval pedestal */}
       <div

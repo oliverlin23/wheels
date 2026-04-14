@@ -1,4 +1,5 @@
 import type { PlayerState } from '../../game/types'
+import { Sprite } from '../Sprite'
 
 type CrownBoxProps = {
   playerState: PlayerState
@@ -62,18 +63,12 @@ export default function CrownBox({ playerState }: CrownBoxProps) {
           zIndex: 1,
         }}
       >
-        {/* CROWN label */}
-        <div
-          style={{
-            fontFamily: '"IBM Plex Mono", monospace',
-            fontSize: 7,
-            color: 'var(--color-ink-mid)',
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
-          }}
-        >
-          CROWN
-        </div>
+        {/* Crown sprite */}
+        <Sprite
+          src="/sprites/crown.png"
+          frame={{ x: 0, y: 0, w: 24, h: 24 }}
+          style={{ width: 16, height: 16, backgroundSize: '16px 16px' }}
+        />
 
         {/* HP number */}
         <div

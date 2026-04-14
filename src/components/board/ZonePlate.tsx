@@ -16,7 +16,7 @@ export default function ZonePlate({ side, playerState }: ZonePlateProps) {
     <div
       style={{
         width: 440,
-        height: 72,
+        height: 56,
         backgroundColor: bgColor,
         border: '1px solid var(--color-ink)',
         borderRadius: 8,

@@ -43,6 +43,7 @@ export type WheelState = {
   spinsRemaining: number
   locked: [boolean, boolean, boolean, boolean, boolean]
   results: [Panel, Panel, Panel, Panel, Panel] | null
+  resultIndices: [number, number, number, number, number] | null
 }
 
 export type GameState = {

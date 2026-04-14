@@ -105,6 +105,9 @@ export const WheelStrip: FC<WheelStripProps> = ({ results, locked, onLockWheel }
 
         const label = panel ? formatPanel(panel) : '--'
         const color = panel ? SYMBOL_COLOR[panel.symbol] : inkMid
+        const panelSrc = panel
+          ? `/sprites/panel-${panel.symbol}${panel.xp ? '-xp' : ''}.png`
+          : null
 
         return (
           <div
@@ -121,7 +124,8 @@ export const WheelStrip: FC<WheelStripProps> = ({ results, locked, onLockWheel }
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: 8,
+              gap: 2,
+              fontSize: 7,
               fontWeight: 400,
               color,
               cursor: 'pointer',
@@ -129,7 +133,16 @@ export const WheelStrip: FC<WheelStripProps> = ({ results, locked, onLockWheel }
               boxSizing: 'border-box',
             }}
           >
-            {label}
+            {panelSrc && (
+              <img
+                src={panelSrc}
+                width={12}
+                height={12}
+                style={{ imageRendering: 'pixelated' as const }}
+                alt=""
+              />
+            )}
+            <span>{label}</span>
           </div>
         )
       })}

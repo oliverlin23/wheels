@@ -45,7 +45,7 @@ export function Stage() {
         }}
       >
         {/* Board */}
-        <BoardChassis />
+        <BoardChassis stageScale={scale} />
 
         {/* 8px grid overlay */}
         <svg

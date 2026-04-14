@@ -22,3 +22,15 @@ export function rollWheel(rng: () => number, _wheelIndex: number, panels: Panel[
   const index = Math.floor(rng() * panels.length)
   return panels[index]
 }
+
+/**
+ * Like rollWheel but also returns the chosen panel index (0-7).
+ */
+export function rollWheelWithIndex(
+  rng: () => number,
+  _wheelIndex: number,
+  panels: Panel[],
+): { panel: Panel; index: number } {
+  const index = Math.floor(rng() * panels.length)
+  return { panel: panels[index], index }
+}

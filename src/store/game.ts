@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import type { GameState, FigurineName, Panel } from '../game/types'
-import { createRng, rollWheel } from '../game/rng'
+import { createRng, rollWheelWithIndex } from '../game/rng'
 import { WHEELS } from '../game/rules/panels'
 import {
   startTurn as startTurnAction,
@@ -13,6 +13,7 @@ import { useLogStore } from './log'
 interface GameStore {
   game: GameState
   rng: () => number
+  spinCount: number
   // Actions
   spin: () => void
   lockWheel: (index: number) => void
@@ -53,6 +54,7 @@ export function createInitialGameState(
       spinsRemaining: 3,
       locked: [false, false, false, false, false],
       results: null,
+      resultIndices: null,
     },
   }
 }
@@ -60,20 +62,24 @@ export function createInitialGameState(
 export const useGameStore = create<GameStore>((set, get) => ({
   game: createInitialGameState(42, ['warrior', 'mage'], ['archer', 'priest']),
   rng: createRng(42),
+  spinCount: 0,
 
   spin: () => {
-    const { game, rng } = get()
+    const { game, rng, spinCount } = get()
     if (game.phase !== 'spinning' || game.wheels.spinsRemaining <= 0) return
 
     const currentResults = game.wheels.results
-    const newResults: [Panel, Panel, Panel, Panel, Panel] = [
-      game.wheels.locked[0] && currentResults ? currentResults[0] : rollWheel(rng, 0, WHEELS[0]),
-      game.wheels.locked[1] && currentResults ? currentResults[1] : rollWheel(rng, 1, WHEELS[1]),
-      game.wheels.locked[2] && currentResults ? currentResults[2] : rollWheel(rng, 2, WHEELS[2]),
-      game.wheels.locked[3] && currentResults ? currentResults[3] : rollWheel(rng, 3, WHEELS[3]),
-      game.wheels.locked[4] && currentResults ? currentResults[4] : rollWheel(rng, 4, WHEELS[4]),
-    ]
+    const currentIndices = game.wheels.resultIndices
 
+    const rolls = ([0, 1, 2, 3, 4] as const).map((i) => {
+      if (game.wheels.locked[i] && currentResults && currentIndices) {
+        return { panel: currentResults[i], index: currentIndices[i] }
+      }
+      return rollWheelWithIndex(rng, i, WHEELS[i])
+    })
+
+    const newResults = rolls.map((r) => r.panel) as [Panel, Panel, Panel, Panel, Panel]
+    const newIndices = rolls.map((r) => r.index) as [number, number, number, number, number]
     const newSpinsRemaining = game.wheels.spinsRemaining - 1
 
     const newGame: GameState = {
@@ -81,11 +87,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
       wheels: {
         ...game.wheels,
         results: newResults,
+        resultIndices: newIndices,
         spinsRemaining: newSpinsRemaining,
       },
     }
 
-    set({ game: newGame })
+    set({ game: newGame, spinCount: spinCount + 1 })
 
     // Auto-resolve if this was the last spin
     if (newSpinsRemaining === 0) {
