@@ -8,29 +8,41 @@ import { Bridge } from './Bridge'
 import { WheelsCanvas } from '../wheels/WheelsCanvas'
 import { WheelRail } from '../wheels/WheelRail'
 import { useSpinAnimation } from '../wheels/useSpinAnimation'
+import type { ClientMessage } from '../../network/protocol'
 
 /**
- * Assembles all board components into the 480x270 canvas.
+ * Assembles all board components into the 480x320 canvas.
  *
- * Vertical budget (270px):
+ * Vertical budget (320px):
  *   0-16:    Header (16px)
- *  16-40:    Opponent wheels (24px -- 3D canvas + rail overlay)
- *  42-114:   Opponent zone plate (72px)
- * 116-128:   Midline band (12px)
- * 130-202:   Player zone plate (72px)
- * 204-228:   Player wheels (24px)
- * 248-270:   Footer (22px)
+ *  20-30:    Wheel rail labels (10px)
+ *  32-60:    3D wheel drums (28px)
+ *  64-140:   Opponent zone plate (76px)
+ * 144-156:   Midline band (12px)
+ * 160-236:   Player zone plate (76px)
+ * 240-268:   3D wheel drums (28px)
+ * 270-280:   Wheel rail labels (10px)
+ * 294-318:   Footer (24px)
  */
-export function BoardChassis({ stageScale = 1 }: { stageScale?: number }) {
+type BoardChassisProps = {
+  stageScale?: number | undefined
+  send?: ((msg: ClientMessage) => void) | undefined
+  myPlayer?: 0 | 1 | 'spectator' | null | undefined
+}
+
+export function BoardChassis({ stageScale = 1, send, myPlayer }: BoardChassisProps) {
   const game = useGameStore((s) => s.game)
-  const spin = useGameStore((s) => s.spin)
-  const lockWheel = useGameStore((s) => s.lockWheel)
-  const startTurn = useGameStore((s) => s.startTurn)
+  const localSpin = useGameStore((s) => s.spin)
+  const localLockWheel = useGameStore((s) => s.lockWheel)
+  const localStartTurn = useGameStore((s) => s.startTurn)
   const spinCount = useGameStore((s) => s.spinCount)
 
   const player = game.players[0]
   const opponent = game.players[1]
-  const canSpinNow = game.phase === 'spinning' && game.wheels.spinsRemaining > 0
+
+  // In multiplayer: only the current player can act, and only on their turn
+  const isMyTurn = myPlayer === undefined || myPlayer === null || myPlayer === game.currentPlayer
+  const canSpinNow = game.phase === 'spinning' && game.wheels.spinsRemaining > 0 && isMyTurn
 
   const { drums, triggerSpin } = useSpinAnimation()
   const prevSpinCount = useRef(spinCount)
@@ -47,10 +59,23 @@ export function BoardChassis({ stageScale = 1 }: { stageScale?: number }) {
   }, [spinCount, game.wheels.resultIndices, game.wheels.locked, triggerSpin])
 
   const handleSpin = () => {
-    if (game.wheels.spinsRemaining === 3) {
-      startTurn()
+    if (send) {
+      send({ type: 'SPIN' })
+    } else {
+      // Local mode (Debug panel)
+      if (game.wheels.spinsRemaining === 3) {
+        localStartTurn()
+      }
+      localSpin()
     }
-    spin()
+  }
+
+  const handleLockWheel = (index: number) => {
+    if (send) {
+      send({ type: 'LOCK_WHEEL', index })
+    } else {
+      localLockWheel(index)
+    }
   }
 
   const settledFlags = drums.map((d) => d.phase === 'settled')
@@ -60,7 +85,7 @@ export function BoardChassis({ stageScale = 1 }: { stageScale?: number }) {
       style={{
         position: 'relative',
         width: 480,
-        height: 270,
+        height: 320,
         overflow: 'hidden',
         fontFamily: '"IBM Plex Mono", monospace',
         fontFeatureSettings: '"tnum"',
@@ -71,58 +96,58 @@ export function BoardChassis({ stageScale = 1 }: { stageScale?: number }) {
         <Header turn={game.turn} />
       </div>
 
-      {/* Opponent result labels: y=16 */}
-      <div style={{ position: 'absolute', top: 16, left: 0, width: 480, height: 10, zIndex: 5 }}>
+      {/* Wheel rail labels: y=20, h=10 */}
+      <div style={{ position: 'absolute', top: 20, left: 0, width: 480, height: 10, zIndex: 5 }}>
         <WheelRail
           results={game.wheels.results}
           locked={game.wheels.locked}
           settled={settledFlags}
-          onLockWheel={lockWheel}
+          onLockWheel={handleLockWheel}
         />
       </div>
 
-      {/* Opponent 3D wheels: y=26, h=32 */}
-      <div style={{ position: 'absolute', top: 26, left: 0, width: 480, height: 32, zIndex: 4 }}>
+      {/* 3D wheel drums (top): y=32, h=28 */}
+      <div style={{ position: 'absolute', top: 32, left: 0, width: 480, height: 28, zIndex: 4 }}>
         <WheelsCanvas drums={drums} locked={game.wheels.locked} stageScale={stageScale} />
       </div>
 
-      {/* Opponent zone plate: y=58, h=56 */}
-      <div style={{ position: 'absolute', top: 58, left: 20 }}>
+      {/* Opponent zone plate: y=64, h=76 */}
+      <div style={{ position: 'absolute', top: 64, left: 20 }}>
         <ZonePlate side="opponent" playerState={opponent} />
       </div>
 
-      {/* Midline rules: y=116, h=12 */}
-      <div style={{ position: 'absolute', top: 116, left: 0 }}>
+      {/* Midline rules: y=144, h=12 */}
+      <div style={{ position: 'absolute', top: 144, left: 0 }}>
         <MidlineRules currentPlayer={game.currentPlayer} turn={game.turn} />
       </div>
 
       {/* Bridge: centered in midline band */}
-      <div style={{ position: 'absolute', top: 116, left: 216 }}>
+      <div style={{ position: 'absolute', top: 144, left: 216 }}>
         <Bridge />
       </div>
 
-      {/* Player zone plate: y=130, h=56 */}
-      <div style={{ position: 'absolute', top: 130, left: 20 }}>
+      {/* Player zone plate: y=160, h=76 */}
+      <div style={{ position: 'absolute', top: 160, left: 20 }}>
         <ZonePlate side="player" playerState={player} />
       </div>
 
-      {/* Player 3D wheels: y=186, h=32 */}
-      <div style={{ position: 'absolute', top: 186, left: 0, width: 480, height: 32, zIndex: 4 }}>
+      {/* 3D wheel drums (bottom): y=240, h=28 */}
+      <div style={{ position: 'absolute', top: 240, left: 0, width: 480, height: 28, zIndex: 4 }}>
         <WheelsCanvas drums={drums} locked={game.wheels.locked} stageScale={stageScale} />
       </div>
 
-      {/* Player result labels: y=218 */}
-      <div style={{ position: 'absolute', top: 218, left: 0, width: 480, height: 10, zIndex: 5 }}>
+      {/* Wheel rail labels (bottom): y=270, h=10 */}
+      <div style={{ position: 'absolute', top: 270, left: 0, width: 480, height: 10, zIndex: 5 }}>
         <WheelRail
           results={game.wheels.results}
           locked={game.wheels.locked}
           settled={settledFlags}
-          onLockWheel={lockWheel}
+          onLockWheel={handleLockWheel}
         />
       </div>
 
-      {/* Footer: y=248 */}
-      <div style={{ position: 'absolute', top: 248, left: 0, width: 480, height: 22 }}>
+      {/* Footer: y=294 */}
+      <div style={{ position: 'absolute', top: 294, left: 0, width: 480, height: 24 }}>
         <Footer
           spinsRemaining={game.wheels.spinsRemaining}
           onSpin={handleSpin}

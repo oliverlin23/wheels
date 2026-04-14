@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "es2023",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "strict": true,
+    "noImplicitAny": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["party/**/*", "src/game/**/*", "src/network/**/*", "src/store/game.ts"]
+}

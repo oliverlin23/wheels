@@ -1,11 +1,12 @@
 import { create } from 'zustand'
-import type { GameState, FigurineName, Panel } from '../game/types'
-import { createRng, rollWheelWithIndex } from '../game/rng'
+import type { GameState, FigurineName } from '../game/types'
+import { createRng } from '../game/rng'
 import { WHEELS } from '../game/rules/panels'
 import {
   startTurn as startTurnAction,
   lockWheel as lockWheelAction,
   endTurn as endTurnAction,
+  spin as spinAction,
 } from '../game/rules/actions'
 import { resolve } from '../game/rules/resolve'
 import { useLogStore } from './log'
@@ -14,12 +15,16 @@ interface GameStore {
   game: GameState
   rng: () => number
   spinCount: number
-  // Actions
+  // Local actions (used by Debug panel and tests)
   spin: () => void
   lockWheel: (index: number) => void
   startTurn: () => void
   resolveRoll: () => void
   endTurn: () => void
+  reset: (seed: number, p1Heroes: [FigurineName, FigurineName], p2Heroes: [FigurineName, FigurineName]) => void
+  // Network actions (server pushes state)
+  setGame: (game: GameState) => void
+  incrementSpinCount: () => void
 }
 
 export function createInitialGameState(
@@ -66,44 +71,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   spin: () => {
     const { game, rng, spinCount } = get()
-    if (game.phase !== 'spinning' || game.wheels.spinsRemaining <= 0) return
-
-    const currentResults = game.wheels.results
-    const currentIndices = game.wheels.resultIndices
-
-    const rolls = ([0, 1, 2, 3, 4] as const).map((i) => {
-      if (game.wheels.locked[i] && currentResults && currentIndices) {
-        return { panel: currentResults[i], index: currentIndices[i] }
-      }
-      return rollWheelWithIndex(rng, i, WHEELS[i])
-    })
-
-    const newResults = rolls.map((r) => r.panel) as [Panel, Panel, Panel, Panel, Panel]
-    const newIndices = rolls.map((r) => r.index) as [number, number, number, number, number]
-    const newSpinsRemaining = game.wheels.spinsRemaining - 1
-
-    const newGame: GameState = {
-      ...game,
-      wheels: {
-        ...game.wheels,
-        results: newResults,
-        resultIndices: newIndices,
-        spinsRemaining: newSpinsRemaining,
-      },
-    }
-
+    const newGame = spinAction(game, rng, WHEELS)
+    if (newGame === game) return
     set({ game: newGame, spinCount: spinCount + 1 })
-
-    // Auto-resolve if this was the last spin
-    if (newSpinsRemaining === 0) {
+    if (newGame.wheels.spinsRemaining === 0) {
       get().resolveRoll()
     }
   },
 
   lockWheel: (index: number) => {
     const { game } = get()
-    const newGame = lockWheelAction(game, index)
-    set({ game: newGame })
+    set({ game: lockWheelAction(game, index) })
   },
 
   startTurn: () => {
@@ -122,7 +100,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   endTurn: () => {
     const { game } = get()
-    const newGame = endTurnAction(game)
-    set({ game: newGame })
+    set({ game: endTurnAction(game) })
   },
+
+  reset: (seed, p1Heroes, p2Heroes) => {
+    useLogStore.getState().clear()
+    set({
+      game: createInitialGameState(seed, p1Heroes, p2Heroes),
+      rng: createRng(seed),
+      spinCount: 0,
+    })
+  },
+
+  // Server pushes state directly
+  setGame: (game) => set({ game }),
+  incrementSpinCount: () => set((s) => ({ spinCount: s.spinCount + 1 })),
 }))

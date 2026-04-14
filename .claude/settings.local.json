@@ -15,7 +15,12 @@
       "Bash(pnpm config:*)",
       "Bash(node:*)",
       "Bash(pnpm remove:*)",
-      "Bash(npx vitest:*)"
+      "Bash(npx vitest:*)",
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "Bash(npx vite:*)",
+      "Read(//tmp/**)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(f'{k}: {list\\(v.keys\\(\\)\\)[:3]} => first frame: {list\\(v.values\\(\\)\\)[0]}'\\) for k,v in d.items\\(\\)]\")"
     ]
   }
 }

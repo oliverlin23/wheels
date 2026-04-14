@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest run",
+    "party:dev": "npx partykit dev"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.2.7",
@@ -18,6 +20,8 @@
     "@xstate/react": "^6.1.0",
     "autoprefixer": "^10.5.0",
     "howler": "^2.2.4",
+    "partykit": "^0.0.115",
+    "partysocket": "^1.1.16",
     "postcss": "^8.5.9",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",

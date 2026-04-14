@@ -17,12 +17,12 @@ export function WheelsCanvas({ drums, locked, stageScale = 1 }: WheelsCanvasProp
   // so we need to render at 1:1 scale and let CSS transform handle upscaling.
   const inverseScale = 1 / stageScale
   const canvasW = 480 * stageScale
-  const canvasH = 32 * stageScale
+  const canvasH = 28 * stageScale
 
   return (
     <div style={{
       width: 480,
-      height: 32,
+      height: 28,
       overflow: 'hidden',
     }}>
       <div style={{
@@ -33,7 +33,7 @@ export function WheelsCanvas({ drums, locked, stageScale = 1 }: WheelsCanvasProp
       }}>
         <Canvas
           orthographic
-          camera={{ zoom: 28 * stageScale, position: [0, 0, 5], near: 0.1, far: 100 }}
+          camera={{ zoom: 24 * stageScale, position: [0, 0, 5], near: 0.1, far: 100 }}
           gl={{ alpha: true, antialias: false }}
           style={{ background: 'transparent' }}
         >

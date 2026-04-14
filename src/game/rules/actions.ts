@@ -1,5 +1,6 @@
-import type { GameState, LogEvent, PlayerState } from '../types'
+import type { GameState, LogEvent, Panel, PlayerState } from '../types'
 import { decayBulwark } from './bulwark'
+import { rollWheelWithIndex } from '../rng'
 
 export function startTurn(state: GameState): { state: GameState; events: LogEvent[] } {
   const currentPlayer = state.players[state.currentPlayer]
@@ -45,6 +46,29 @@ export function lockWheel(state: GameState, wheelIndex: number): GameState {
     wheels: {
       ...state.wheels,
       locked: newLocked,
+    },
+  }
+}
+
+export function spin(
+  state: GameState,
+  rng: () => number,
+  wheels: Panel[][],
+): GameState {
+  if (state.phase !== 'spinning' || state.wheels.spinsRemaining <= 0) return state
+  const rolls = ([0, 1, 2, 3, 4] as const).map((i) => {
+    if (state.wheels.locked[i] && state.wheels.results && state.wheels.resultIndices) {
+      return { panel: state.wheels.results[i], index: state.wheels.resultIndices[i] }
+    }
+    return rollWheelWithIndex(rng, i, wheels[i])
+  })
+  return {
+    ...state,
+    wheels: {
+      ...state.wheels,
+      results: rolls.map((r) => r.panel) as [Panel, Panel, Panel, Panel, Panel],
+      resultIndices: rolls.map((r) => r.index) as [number, number, number, number, number],
+      spinsRemaining: state.wheels.spinsRemaining - 1,
     },
   }
 }

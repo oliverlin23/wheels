@@ -1,0 +1,5 @@
+{
+  "name": "wheels",
+  "main": "party/wheels.ts",
+  "compatibilityDate": "2025-03-04"
+}

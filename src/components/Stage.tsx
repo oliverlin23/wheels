@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { BoardChassis } from './board/BoardChassis'
+import type { ClientMessage } from '../network/protocol'
 
 const BASE_W = 480
-const BASE_H = 270
+const BASE_H = 320
 
 function useStageScale(containerRef: React.RefObject<HTMLDivElement | null>) {
   const [scale, setScale] = useState(1)
@@ -23,7 +24,12 @@ function useStageScale(containerRef: React.RefObject<HTMLDivElement | null>) {
   return scale
 }
 
-export function Stage() {
+type StageProps = {
+  send?: (msg: ClientMessage) => void
+  myPlayer?: 0 | 1 | 'spectator' | null
+}
+
+export function Stage({ send, myPlayer }: StageProps) {
   const containerRef = useRef<HTMLDivElement>(null)
   const scale = useStageScale(containerRef)
 
@@ -45,7 +51,7 @@ export function Stage() {
         }}
       >
         {/* Board */}
-        <BoardChassis stageScale={scale} />
+        <BoardChassis stageScale={scale} send={send} myPlayer={myPlayer} />
 
         {/* 8px grid overlay */}
         <svg

@@ -32,7 +32,7 @@ export default function CrownBox({ playerState }: CrownBoxProps) {
     <div
       style={{
         width: 72,
-        height: 56,
+        height: 68,
         border: '1px solid var(--color-ink)',
         position: 'relative',
         display: 'flex',

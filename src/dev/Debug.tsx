@@ -71,16 +71,16 @@ export function Debug() {
         fontSize: '11px',
         color: '#0F172A',
         background: '#F5F1E8',
-        padding: '12px',
+        padding: '16px',
         height: '100vh',
         overflow: 'auto',
         display: 'flex',
         flexDirection: 'column',
-        gap: '8px',
+        gap: '14px',
       }}
     >
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #0F172A', paddingBottom: '4px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid #0F172A', paddingBottom: '6px' }}>
         <span>TURN {String(game.turn).padStart(2, '0')} | P{game.currentPlayer + 1}</span>
         <span>FSM: {String(machineState).toUpperCase()}</span>
         <span>{game.phase.toUpperCase()}</span>
@@ -93,9 +93,9 @@ export function Debug() {
       </div>
 
       {/* Wheels */}
-      <div style={{ borderTop: '1px solid #334155', paddingTop: '4px' }}>
-        <div>WHEELS (spins: {game.wheels.spinsRemaining})</div>
-        <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+      <div style={{ borderTop: '1px solid #334155', paddingTop: '8px' }}>
+        <div style={{ marginBottom: '6px' }}>WHEELS (spins: {game.wheels.spinsRemaining})</div>
+        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
           {[0, 1, 2, 3, 4].map((i) => (
             <button
               key={i}
@@ -117,7 +117,7 @@ export function Debug() {
       </div>
 
       {/* Actions */}
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', borderTop: '1px solid #334155', paddingTop: '4px' }}>
+      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', borderTop: '1px solid #334155', paddingTop: '8px' }}>
         <ActionButton label="START TURN" onClick={() => { startTurn(); clearLog() }} />
         <ActionButton label="SPIN" onClick={handleSpin} />
         <ActionButton label="SETTLE" onClick={handleSettle} />
@@ -133,9 +133,9 @@ export function Debug() {
         style={{
           flex: 1,
           borderTop: '1px solid #334155',
-          paddingTop: '4px',
+          paddingTop: '8px',
           overflow: 'auto',
-          minHeight: '100px',
+          minHeight: '80px',
         }}
       >
         <div style={{ marginBottom: '4px' }}>LOG ({events.length})</div>
@@ -158,12 +158,13 @@ export function Debug() {
 
 function PlayerPanel({ label, player }: { label: string; player: import('../game/types').PlayerState }) {
   return (
-    <div style={{ flex: 1, border: '1px solid #334155', padding: '6px' }}>
-      <div style={{ fontWeight: 600, marginBottom: '4px' }}>{label}</div>
-      <div>CROWN: {player.crownHp} | BULWARK: {player.bulwark}/5</div>
+    <div style={{ flex: 1, border: '1px solid #334155', padding: '8px' }}>
+      <div style={{ fontWeight: 600, marginBottom: '6px' }}>{label}</div>
+      <div style={{ marginBottom: '4px' }}>CROWN: {player.crownHp} | BULWARK: {player.bulwark}/5</div>
       {player.heroes.map((h, i) => (
-        <div key={i} style={{ marginTop: '4px', paddingLeft: '4px', borderLeft: `2px solid ${h.slot === 'squares' ? '#D97706' : '#0F766E'}` }}>
-          <div>{h.name.toUpperCase()} ({h.rank}) [{h.slot}]</div>
+        <div key={i} style={{ marginTop: '6px', paddingLeft: '6px', borderLeft: `2px solid ${h.slot === 'squares' ? '#D97706' : '#0F766E'}` }}>
+          <div>{h.name.toUpperCase()} ({h.rank})</div>
+          <div style={{ color: '#334155' }}>[{h.slot}]</div>
           <div>E: {h.energy} | XP: {h.xp}/10</div>
         </div>
       ))}
