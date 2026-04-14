@@ -37,8 +37,11 @@ export function BoardChassis({ stageScale = 1, send, myPlayer }: BoardChassisPro
   const localStartTurn = useGameStore((s) => s.startTurn)
   const spinCount = useGameStore((s) => s.spinCount)
 
-  const player = game.players[0]
-  const opponent = game.players[1]
+  // Perspective flipping: each player sees their own heroes at the bottom
+  const meIndex = (myPlayer === 0 || myPlayer === 1) ? myPlayer : 0
+  const themIndex: 0 | 1 = meIndex === 0 ? 1 : 0
+  const player = game.players[meIndex]
+  const opponent = game.players[themIndex]
 
   // In multiplayer: only the current player can act, and only on their turn
   const isMyTurn = myPlayer === undefined || myPlayer === null || myPlayer === game.currentPlayer

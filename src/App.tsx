@@ -93,7 +93,7 @@ function App() {
       return (
         <HeroSelect
           send={handleSend}
-          myPlayer={myPlayer ?? 0}
+          myPlayer={myPlayer}
           onBack={() => setScreen('lobby')}
         />
       )
