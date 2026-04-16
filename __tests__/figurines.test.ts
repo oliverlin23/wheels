@@ -8,7 +8,7 @@ function makeHero(overrides: Partial<HeroState> = {}): HeroState {
     rank: 'bronze',
     energy: 3,
     xp: 0,
-    slot: 'squares',
+    slot: 'suns',
     ...overrides,
   }
 }
@@ -18,8 +18,8 @@ function makePlayer(overrides: Partial<PlayerState> = {}): PlayerState {
     crownHp: 12,
     bulwark: 0,
     heroes: [
-      makeHero({ name: 'warrior', slot: 'squares' }),
-      makeHero({ name: 'mage', slot: 'diamonds', energy: 0 }),
+      makeHero({ name: 'warrior', slot: 'suns' }),
+      makeHero({ name: 'mage', slot: 'moons', energy: 0 }),
     ],
     ...overrides,
   }
@@ -120,7 +120,7 @@ describe('activateFigurine', () => {
     it('hits bulwark when defender has bulwark > 0', () => {
       const hero = makeHero({ name: 'warrior', rank: 'bronze', energy: 3 })
       const attacker = makePlayer({
-        heroes: [hero, makeHero({ name: 'mage', slot: 'diamonds', energy: 0 })],
+        heroes: [hero, makeHero({ name: 'mage', slot: 'moons', energy: 0 })],
       })
       const defender = makePlayer({ bulwark: 5 })
 
@@ -134,7 +134,7 @@ describe('activateFigurine', () => {
     it('hits crown when defender has no bulwark', () => {
       const hero = makeHero({ name: 'warrior', rank: 'silver', energy: 3 })
       const attacker = makePlayer({
-        heroes: [hero, makeHero({ name: 'mage', slot: 'diamonds', energy: 0 })],
+        heroes: [hero, makeHero({ name: 'mage', slot: 'moons', energy: 0 })],
       })
       const defender = makePlayer({ bulwark: 0 })
 
@@ -147,9 +147,9 @@ describe('activateFigurine', () => {
 
   describe('mage', () => {
     it('ground fireball blocked by bulwark, high fireball always hits crown', () => {
-      const hero = makeHero({ name: 'mage', rank: 'bronze', energy: 5, slot: 'diamonds' })
+      const hero = makeHero({ name: 'mage', rank: 'bronze', energy: 5, slot: 'moons' })
       const attacker = makePlayer({
-        heroes: [makeHero({ name: 'warrior', slot: 'squares' }), hero],
+        heroes: [makeHero({ name: 'warrior', slot: 'suns' }), hero],
       })
       const defender = makePlayer({ bulwark: 3 })
 
@@ -162,9 +162,9 @@ describe('activateFigurine', () => {
     })
 
     it('ground fireball hits crown when no bulwark', () => {
-      const hero = makeHero({ name: 'mage', rank: 'silver', energy: 4, slot: 'diamonds' })
+      const hero = makeHero({ name: 'mage', rank: 'silver', energy: 4, slot: 'moons' })
       const attacker = makePlayer({
-        heroes: [makeHero({ name: 'warrior', slot: 'squares' }), hero],
+        heroes: [makeHero({ name: 'warrior', slot: 'suns' }), hero],
       })
       const defender = makePlayer({ bulwark: 0 })
 
@@ -180,7 +180,7 @@ describe('activateFigurine', () => {
     it('hits crown when defender bulwark < 3', () => {
       const hero = makeHero({ name: 'archer', rank: 'bronze', energy: 4 })
       const attacker = makePlayer({
-        heroes: [hero, makeHero({ name: 'mage', slot: 'diamonds', energy: 0 })],
+        heroes: [hero, makeHero({ name: 'mage', slot: 'moons', energy: 0 })],
       })
       const defender = makePlayer({ bulwark: 2 })
 
@@ -193,7 +193,7 @@ describe('activateFigurine', () => {
     it('hits bulwark when defender bulwark >= 3', () => {
       const hero = makeHero({ name: 'archer', rank: 'gold', energy: 3 })
       const attacker = makePlayer({
-        heroes: [hero, makeHero({ name: 'mage', slot: 'diamonds', energy: 0 })],
+        heroes: [hero, makeHero({ name: 'mage', slot: 'moons', energy: 0 })],
       })
       const defender = makePlayer({ bulwark: 4 })
 
@@ -209,7 +209,7 @@ describe('activateFigurine', () => {
       const hero = makeHero({ name: 'engineer', rank: 'bronze', energy: 4 })
       const attacker = makePlayer({
         bulwark: 1,
-        heroes: [hero, makeHero({ name: 'mage', slot: 'diamonds', energy: 0 })],
+        heroes: [hero, makeHero({ name: 'mage', slot: 'moons', energy: 0 })],
       })
       const defender = makePlayer({ bulwark: 0 })
 
@@ -225,7 +225,7 @@ describe('activateFigurine', () => {
       const hero = makeHero({ name: 'engineer', rank: 'silver', energy: 4 })
       const attacker = makePlayer({
         bulwark: 4,
-        heroes: [hero, makeHero({ name: 'mage', slot: 'diamonds', energy: 0 })],
+        heroes: [hero, makeHero({ name: 'mage', slot: 'moons', energy: 0 })],
       })
       const defender = makePlayer({ bulwark: 0 })
 
@@ -238,7 +238,7 @@ describe('activateFigurine', () => {
       const hero = makeHero({ name: 'engineer', rank: 'silver', energy: 4 })
       const attacker = makePlayer({
         bulwark: 0,
-        heroes: [hero, makeHero({ name: 'mage', slot: 'diamonds', energy: 0 })],
+        heroes: [hero, makeHero({ name: 'mage', slot: 'moons', energy: 0 })],
       })
       const defender = makePlayer({ bulwark: 3 })
 
@@ -253,10 +253,10 @@ describe('activateFigurine', () => {
   describe('assassin', () => {
     it('bypasses bulwark, delays opponent hero, strips bulwark', () => {
       const hero = makeHero({ name: 'assassin', rank: 'bronze', energy: 3 })
-      const defHero0 = makeHero({ name: 'warrior', slot: 'squares', energy: 2 })
-      const defHero1 = makeHero({ name: 'mage', slot: 'diamonds', energy: 4 })
+      const defHero0 = makeHero({ name: 'warrior', slot: 'suns', energy: 2 })
+      const defHero1 = makeHero({ name: 'mage', slot: 'moons', energy: 4 })
       const attacker = makePlayer({
-        heroes: [hero, makeHero({ name: 'mage', slot: 'diamonds', energy: 0 })],
+        heroes: [hero, makeHero({ name: 'mage', slot: 'moons', energy: 0 })],
       })
       const defender = makePlayer({
         bulwark: 3,
@@ -278,7 +278,7 @@ describe('activateFigurine', () => {
     it('does not strip bulwark below 0', () => {
       const hero = makeHero({ name: 'assassin', rank: 'silver', energy: 3 })
       const attacker = makePlayer({
-        heroes: [hero, makeHero({ name: 'mage', slot: 'diamonds', energy: 0 })],
+        heroes: [hero, makeHero({ name: 'mage', slot: 'moons', energy: 0 })],
       })
       const defender = makePlayer({ bulwark: 0 })
 
@@ -291,8 +291,8 @@ describe('activateFigurine', () => {
 
   describe('priest', () => {
     it('heals crown and grants energy to partner', () => {
-      const hero = makeHero({ name: 'priest', rank: 'bronze', energy: 4, slot: 'diamonds' })
-      const partner = makeHero({ name: 'warrior', slot: 'squares', energy: 1 })
+      const hero = makeHero({ name: 'priest', rank: 'bronze', energy: 4, slot: 'moons' })
+      const partner = makeHero({ name: 'warrior', slot: 'suns', energy: 1 })
       const attacker = makePlayer({
         crownHp: 8,
         heroes: [partner, hero],
@@ -310,8 +310,8 @@ describe('activateFigurine', () => {
     })
 
     it('caps healing at 12', () => {
-      const hero = makeHero({ name: 'priest', rank: 'gold', energy: 3, slot: 'diamonds' })
-      const partner = makeHero({ name: 'warrior', slot: 'squares', energy: 0 })
+      const hero = makeHero({ name: 'priest', rank: 'gold', energy: 3, slot: 'moons' })
+      const partner = makeHero({ name: 'warrior', slot: 'suns', energy: 0 })
       const attacker = makePlayer({
         crownHp: 11,
         heroes: [partner, hero],
@@ -330,7 +330,7 @@ describe('activateFigurine', () => {
   it('does not mutate input states', () => {
     const hero = makeHero({ name: 'warrior', rank: 'bronze', energy: 3 })
     const attacker = makePlayer({
-      heroes: [hero, makeHero({ name: 'mage', slot: 'diamonds', energy: 0 })],
+      heroes: [hero, makeHero({ name: 'mage', slot: 'moons', energy: 0 })],
     })
     const defender = makePlayer({ crownHp: 10, bulwark: 0 })
 

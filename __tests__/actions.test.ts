@@ -2,12 +2,12 @@ import { describe, it, expect } from 'vitest'
 import { startRound, lockWheel, canSpin, confirmSpins, bothConfirmed } from '../src/game/rules/actions'
 import type { GameState, HeroState, PlayerState, WheelState } from '../src/game/types'
 
-function makeHero(slot: 'squares' | 'diamonds'): HeroState {
+function makeHero(slot: 'suns' | 'moons'): HeroState {
   return { name: 'warrior', rank: 'bronze', energy: 0, xp: 0, slot }
 }
 
 function makePlayer(bulwark: number): PlayerState {
-  return { crownHp: 20, bulwark, heroes: [makeHero('squares'), makeHero('diamonds')] }
+  return { crownHp: 20, bulwark, heroes: [makeHero('suns'), makeHero('moons')] }
 }
 
 function makeWheelState(overrides?: Partial<WheelState>): WheelState {

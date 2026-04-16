@@ -14,11 +14,8 @@ export const Footer: FC<FooterProps> = ({ spinsRemaining, onSpin, onConfirm, can
   const inkMid = 'var(--color-ink-mid)'
   const maxSpins = 3
 
-  const spinColor = canSpin ? ink : inkMid
-  const spinCursor = canSpin ? 'pointer' : 'default'
-
-  const confirmColor = canConfirm ? ink : inkMid
-  const confirmCursor = canConfirm ? 'pointer' : 'default'
+  const spinActive = canSpin
+  const confirmActive = canConfirm && !confirmed
 
   const pips = Array.from({ length: maxSpins }, (_, i) => {
     const filled = i < spinsRemaining
@@ -26,89 +23,104 @@ export const Footer: FC<FooterProps> = ({ spinsRemaining, onSpin, onConfirm, can
       <div
         key={i}
         style={{
-          width: 8,
-          height: 4,
-          backgroundColor: ink,
-          opacity: filled ? 1 : 0.15,
-          marginLeft: i > 0 ? 2 : 0,
+          width: 10,
+          height: 5,
+          backgroundColor: filled ? ink : ink,
+          opacity: filled ? 1 : 0.12,
         }}
       />
     )
   })
 
-  const spinCountStr = String(spinsRemaining).padStart(2, '0')
-
   return (
     <div
       style={{
-        width: 480,
-        height: 24,
+        width: 520,
+        height: 28,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        gap: 16,
-        fontFamily: '"IBM Plex Mono", monospace',
-        fontFeatureSettings: '"tnum"',
+        gap: 20,
       }}
     >
-      {/* SPIN button with double border */}
+      {/* SPIN button */}
       <div
-        onClick={canSpin ? onSpin : undefined}
+        onClick={spinActive ? onSpin : undefined}
         style={{
-          position: 'relative',
-          padding: '2px 12px',
-          border: `1px solid ${spinColor}`,
-          outline: `1px solid ${spinColor}`,
-          outlineOffset: 2,
-          fontSize: 10,
-          fontWeight: 400,
-          textTransform: 'uppercase',
-          color: spinColor,
-          cursor: spinCursor,
+          padding: '3px 20px',
+          border: `1px solid ${spinActive ? ink : inkMid}`,
           fontFamily: '"IBM Plex Mono", monospace',
-          fontFeatureSettings: '"tnum"',
+          fontSize: 11,
+          fontWeight: 400,
+          letterSpacing: '0.15em',
+          textTransform: 'uppercase',
+          color: spinActive ? ink : inkMid,
+          cursor: spinActive ? 'pointer' : 'default',
           userSelect: 'none',
+          transition: 'background-color 80ms',
+          backgroundColor: 'transparent',
+        }}
+        onMouseEnter={(e) => {
+          if (spinActive) (e.target as HTMLElement).style.backgroundColor = 'var(--color-paper-dim)'
+        }}
+        onMouseLeave={(e) => {
+          (e.target as HTMLElement).style.backgroundColor = 'transparent'
         }}
       >
         [ SPIN ]
       </div>
 
-      {/* Spins remaining */}
+      {/* Spins remaining — compact readout */}
       <div
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: 4,
-          fontSize: 7,
-          fontWeight: 400,
-          textTransform: 'uppercase',
-          color: ink,
-          fontFamily: '"IBM Plex Mono", monospace',
-          fontFeatureSettings: '"tnum"',
+          gap: 3,
         }}
       >
-        <span>SPINS</span>
-        <div style={{ display: 'flex', alignItems: 'center' }}>{pips}</div>
-        <span>
-          {spinCountStr}/{String(maxSpins).padStart(2, '0')}
+        <span style={{
+          fontFamily: '"IBM Plex Mono", monospace',
+          fontSize: 7,
+          color: inkMid,
+          textTransform: 'uppercase',
+          letterSpacing: '0.08em',
+          fontFeatureSettings: '"tnum"',
+        }}>
+          SPINS
+        </span>
+        <div style={{ display: 'flex', gap: 2 }}>{pips}</div>
+        <span style={{
+          fontFamily: '"IBM Plex Mono", monospace',
+          fontSize: 7,
+          fontFeatureSettings: '"tnum"',
+          color: ink,
+        }}>
+          {String(spinsRemaining).padStart(2, '0')}/{String(maxSpins).padStart(2, '0')}
         </span>
       </div>
 
       {/* CONFIRM button */}
       <div
-        onClick={canConfirm ? onConfirm : undefined}
+        onClick={confirmActive ? onConfirm : undefined}
         style={{
-          position: 'relative',
-          padding: '2px 12px',
-          border: `1px solid ${confirmed ? 'var(--color-ink-mid)' : confirmColor}`,
-          fontSize: 10,
-          fontWeight: 400,
-          textTransform: 'uppercase',
-          color: confirmed ? 'var(--color-ink-mid)' : confirmColor,
-          cursor: confirmed ? 'default' : confirmCursor,
+          padding: '3px 16px',
+          border: `1px solid ${confirmed ? 'var(--color-midline-violet)' : confirmActive ? ink : inkMid}`,
           fontFamily: '"IBM Plex Mono", monospace',
-          fontFeatureSettings: '"tnum"',
+          fontSize: 11,
+          fontWeight: 400,
+          letterSpacing: '0.15em',
+          textTransform: 'uppercase',
+          color: confirmed ? 'var(--color-midline-violet)' : confirmActive ? ink : inkMid,
+          cursor: confirmActive ? 'pointer' : 'default',
           userSelect: 'none',
+          backgroundColor: confirmed ? 'rgba(109, 40, 217, 0.06)' : 'transparent',
+          transition: 'background-color 80ms',
+        }}
+        onMouseEnter={(e) => {
+          if (confirmActive) (e.target as HTMLElement).style.backgroundColor = 'var(--color-paper-dim)'
+        }}
+        onMouseLeave={(e) => {
+          if (!confirmed) (e.target as HTMLElement).style.backgroundColor = 'transparent'
         }}
       >
         {confirmed ? '[ READY ]' : '[ CONFIRM ]'}

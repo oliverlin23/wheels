@@ -35,9 +35,9 @@ describe('useGameStore', () => {
     expect(state.players[1].crownHp).toBe(10)
     expect(state.players[0].bulwark).toBe(0)
     expect(state.players[0].heroes[0].name).toBe('warrior')
-    expect(state.players[0].heroes[0].slot).toBe('squares')
+    expect(state.players[0].heroes[0].slot).toBe('suns')
     expect(state.players[0].heroes[1].name).toBe('mage')
-    expect(state.players[0].heroes[1].slot).toBe('diamonds')
+    expect(state.players[0].heroes[1].slot).toBe('moons')
     expect(state.players[1].heroes[0].name).toBe('archer')
     expect(state.players[1].heroes[1].name).toBe('priest')
   })
@@ -110,15 +110,21 @@ describe('useGameStore', () => {
     }
   })
 
-  it('resolveRound updates state and pushes events to log store', () => {
+  it('resolveRound queues events in playback store', async () => {
     // Need results for resolve to do anything
     useGameStore.getState().spin(0)
     useLogStore.getState().clear()
+
+    // Import lazily to avoid circular import issues in tests
+    const { usePlaybackStore } = await import('../src/resolve/playbackStore')
+    usePlaybackStore.getState().reset()
+
     useGameStore.getState().resolveRound()
 
-    // resolve should have pushed events
-    const events = useLogStore.getState().events
-    expect(events.length).toBeGreaterThan(0)
+    // Resolve should have loaded a timeline into the playback store
+    const timeline = usePlaybackStore.getState().timeline
+    expect(timeline.length).toBeGreaterThan(0)
+    expect(usePlaybackStore.getState().isPlayingBack).toBe(true)
   })
 
   it('confirmSpins marks player as confirmed', () => {
@@ -126,7 +132,7 @@ describe('useGameStore', () => {
     expect(useGameStore.getState().game.confirmed).toEqual([true, false])
   })
 
-  it('full round cycle: startRound -> spin both -> confirmSpins both -> auto-resolve', () => {
+  it('full round cycle: startRound -> spin both -> confirmSpins both -> auto-resolve', async () => {
     // Start round
     useGameStore.getState().startRound()
     expect(useGameStore.getState().game.wheels[0].spinsRemaining).toBe(3)
@@ -142,13 +148,16 @@ describe('useGameStore', () => {
     expect(useGameStore.getState().game.wheels[1].results).not.toBeNull()
 
     // Confirm spins -- when both confirm, auto-reveal and resolve kicks in
+    const { usePlaybackStore } = await import('../src/resolve/playbackStore')
+    usePlaybackStore.getState().reset()
     useLogStore.getState().clear()
+
     useGameStore.getState().confirmSpins(0)
     expect(useGameStore.getState().game.confirmed[0]).toBe(true)
 
     useGameStore.getState().confirmSpins(1)
-    // After both confirm, the store auto-reveals and resolves
-    const events = useLogStore.getState().events
-    expect(events.length).toBeGreaterThan(0)
+    // After both confirm, resolution is queued into the playback store
+    const timeline = usePlaybackStore.getState().timeline
+    expect(timeline.length).toBeGreaterThan(0)
   })
 })

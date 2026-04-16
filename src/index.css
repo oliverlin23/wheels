@@ -14,9 +14,9 @@
   --color-blue-wash: #DBEAFE;
   --color-red-ink: #B91C1C;
   --color-red-wash: #FEE2E2;
-  --color-square-gold: #D97706;
-  --color-diamond-teal: #0F766E;
-  --color-hammer-steel: #475569;
+  --color-sun-gold: #D97706;
+  --color-moon-teal: #0F766E;
+  --color-shield-steel: #475569;
   --color-midline-violet: #6D28D9;
   --color-bypass-magenta: #BE185D;
   --color-rank-bronze: #92400E;
@@ -47,4 +47,24 @@ body,
 
 .font-mono {
   font-feature-settings: "tnum";
+}
+
+@keyframes arrow-hop-left {
+  0%, 32% { transform: translateX(0); }
+  33%, 65% { transform: translateX(-2px); }
+  66%, 100% { transform: translateX(-4px); }
+}
+
+@keyframes arrow-hop-right {
+  0%, 32% { transform: translateX(0); }
+  33%, 65% { transform: translateX(2px); }
+  66%, 100% { transform: translateX(4px); }
+}
+
+/* Chip highlight pulse — fires when a chip is marked as contributing to a step.
+   Briefly grows the chip and lifts it, then settles, to draw attention. */
+@keyframes chip-highlight-pulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.15) translateY(-1px); }
+  100% { transform: scale(1); }
 }

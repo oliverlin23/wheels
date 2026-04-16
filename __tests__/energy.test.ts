@@ -8,7 +8,7 @@ function makeHero(energy: number): HeroState {
     rank: 'bronze',
     energy,
     xp: 0,
-    slot: 'squares',
+    slot: 'suns',
   }
 }
 

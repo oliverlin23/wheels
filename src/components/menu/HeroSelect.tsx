@@ -28,7 +28,7 @@ export function HeroSelect({ send, myPlayer, onBack }: HeroSelectProps) {
     return (
       <div
         style={{
-          width: '100vw',
+          width: '100%',
           height: '100vh',
           background: 'var(--color-paper)',
           display: 'flex',
@@ -80,8 +80,9 @@ export function HeroSelect({ send, myPlayer, onBack }: HeroSelectProps) {
     )
   }
 
-  const playerIndex = myPlayer as 0 | 1
+  const playerIndex: 0 | 1 = myPlayer === 1 ? 1 : 0
   const accentColor = playerIndex === 0 ? 'var(--color-blue-ink)' : 'var(--color-red-ink)'
+  const playerLabel = `PLAYER ${playerIndex + 1}`
 
   const toggleHero = (name: FigurineName) => {
     if (confirmed) return
@@ -94,8 +95,8 @@ export function HeroSelect({ send, myPlayer, onBack }: HeroSelectProps) {
 
   const slotTag = (name: FigurineName): string | null => {
     const idx = selected.indexOf(name)
-    if (idx === 0) return '[SQ]'
-    if (idx === 1) return '[DI]'
+    if (idx === 0) return '[SUN]'
+    if (idx === 1) return '[MON]'
     return null
   }
 
@@ -120,7 +121,7 @@ export function HeroSelect({ send, myPlayer, onBack }: HeroSelectProps) {
   return (
     <div
       style={{
-        width: '100vw',
+        width: '100%',
         height: '100vh',
         background: 'var(--color-paper)',
         display: 'flex',
@@ -152,7 +153,7 @@ export function HeroSelect({ send, myPlayer, onBack }: HeroSelectProps) {
           color: accentColor,
         }}
       >
-        PLAYER {playerIndex + 1}
+        {playerLabel}
       </h2>
 
       <div

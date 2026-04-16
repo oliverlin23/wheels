@@ -22,8 +22,8 @@ function makePlayer(overrides: Partial<PlayerState> = {}): PlayerState {
     crownHp: 10,
     bulwark: 0,
     heroes: [
-      makeHero('warrior', 'squares'),
-      makeHero('archer', 'diamonds'),
+      makeHero('warrior', 'suns'),
+      makeHero('archer', 'moons'),
     ],
     ...overrides,
   }
@@ -64,11 +64,11 @@ describe('resolve', () => {
 
   it('Step 1: grants XP from starry panels', () => {
     const results: [Panel, Panel, Panel, Panel, Panel] = [
-      p('square', 1, true),   // XP for squares hero
-      p('diamond', 1, true),  // XP for diamonds hero
-      p('hammer', 1, false),
-      p('hammer', 1, false),
-      p('square', 1, false),
+      p('sun', 1, true),   // XP for suns hero
+      p('moon', 1, true),  // XP for moons hero
+      p('shield', 1, false),
+      p('shield', 1, false),
+      p('sun', 1, false),
     ]
     const state = makeState({
       wheels: [makeWheelState(results), makeWheelState()],
@@ -80,52 +80,52 @@ describe('resolve', () => {
     expect(result.state.players[0].heroes[1].xp).toBe(1)
   })
 
-  it('Step 2: builds bulwark from 3+ hammers', () => {
+  it('Step 2: builds bulwark from 3+ shields', () => {
     const results: [Panel, Panel, Panel, Panel, Panel] = [
-      p('hammer', 1, false),
-      p('hammer', 1, false),
-      p('hammer', 1, false),
-      p('square', 1, false),
-      p('diamond', 1, false),
+      p('shield', 1, false),
+      p('shield', 1, false),
+      p('shield', 1, false),
+      p('sun', 1, false),
+      p('moon', 1, false),
     ]
     const state = makeState({
       wheels: [makeWheelState(results), makeWheelState()],
     })
     const result = resolve(state)
-    // 3 hammers - 2 = 1 bulwark
+    // 3 shields - 2 = 1 bulwark
     expect(result.state.players[0].bulwark).toBe(1)
   })
 
   it('Step 3: adds energy from symbols', () => {
     const results: [Panel, Panel, Panel, Panel, Panel] = [
-      p('square', 1, false),
-      p('square', 1, false),
-      p('square', 1, false),
-      p('diamond', 1, false),
-      p('diamond', 1, false),
+      p('sun', 1, false),
+      p('sun', 1, false),
+      p('sun', 1, false),
+      p('moon', 1, false),
+      p('moon', 1, false),
     ]
     const state = makeState({
       wheels: [makeWheelState(results), makeWheelState()],
     })
     const result = resolve(state)
-    // 3 squares - 2 = 1 energy for warrior (squares slot)
+    // 3 suns - 2 = 1 energy for warrior (suns slot)
     expect(result.state.players[0].heroes[0].energy).toBe(1)
-    // 2 diamonds = 0 energy (below threshold)
+    // 2 moons = 0 energy (below threshold)
     expect(result.state.players[0].heroes[1].energy).toBe(0)
   })
 
   it('Step 3: warrior activates when energy threshold met', () => {
     const results: [Panel, Panel, Panel, Panel, Panel] = [
-      p('square', 2, false),  // SS = 2
-      p('square', 2, false),  // SS = 2
-      p('square', 1, false),  // S = 1, total = 5
-      p('diamond', 1, false),
-      p('hammer', 1, false),
+      p('sun', 2, false),  // SS = 2
+      p('sun', 2, false),  // SS = 2
+      p('sun', 1, false),  // S = 1, total = 5
+      p('moon', 1, false),
+      p('shield', 1, false),
     ]
     const state = makeState({
       wheels: [makeWheelState(results), makeWheelState()],
     })
-    // Warrior costs 3 energy. 5 squares - 2 = 3 energy. Should activate.
+    // Warrior costs 3 energy. 5 suns - 2 = 3 energy. Should activate.
     const result = resolve(state)
     // Warrior activated: energy reset to 0
     expect(result.state.players[0].heroes[0].energy).toBe(0)
@@ -138,26 +138,26 @@ describe('resolve', () => {
   it('Step 4: assassin acts before other heroes', () => {
     const player1 = makePlayer({
       heroes: [
-        makeHero('assassin', 'squares', { energy: 3, rank: 'bronze' }),
-        makeHero('warrior', 'diamonds', { energy: 2, rank: 'bronze' }),
+        makeHero('assassin', 'suns', { energy: 3, rank: 'bronze' }),
+        makeHero('warrior', 'moons', { energy: 2, rank: 'bronze' }),
       ],
     })
     const player2 = makePlayer({
       bulwark: 2,
     })
     const results: [Panel, Panel, Panel, Panel, Panel] = [
-      p('square', 1, false),
-      p('square', 1, false),
-      p('diamond', 1, false),
-      p('diamond', 1, false),
-      p('diamond', 1, false),
+      p('sun', 1, false),
+      p('sun', 1, false),
+      p('moon', 1, false),
+      p('moon', 1, false),
+      p('moon', 1, false),
     ]
     const state = makeState({
       players: [player1, player2],
       wheels: [makeWheelState(results), makeWheelState()],
     })
     // Assassin has enough energy (3/3), should act in step 4
-    // 3 diamonds - 2 = 1 energy for warrior (diamonds slot), total 3/3, warrior activates in step 8
+    // 3 moons - 2 = 1 energy for warrior (moons slot), total 3/3, warrior activates in step 8
     const result = resolve(state)
     // Assassin dealt 1 crown damage (bypasses bulwark)
     // Assassin stripped 1 bulwark (2 -> 1)
@@ -169,16 +169,16 @@ describe('resolve', () => {
     const player1 = makePlayer({
       crownHp: 7,
       heroes: [
-        makeHero('priest', 'squares', { energy: 4, rank: 'bronze' }),
-        makeHero('warrior', 'diamonds', { energy: 2, rank: 'bronze' }),
+        makeHero('priest', 'suns', { energy: 4, rank: 'bronze' }),
+        makeHero('warrior', 'moons', { energy: 2, rank: 'bronze' }),
       ],
     })
     const results: [Panel, Panel, Panel, Panel, Panel] = [
-      p('square', 1, false),
-      p('diamond', 1, false),
-      p('hammer', 1, false),
-      p('hammer', 1, false),
-      p('hammer', 1, false),
+      p('sun', 1, false),
+      p('moon', 1, false),
+      p('shield', 1, false),
+      p('shield', 1, false),
+      p('shield', 1, false),
     ]
     const state = makeState({
       players: [player1, makePlayer()],
@@ -197,16 +197,16 @@ describe('resolve', () => {
   it('Step 6: engineer acts and builds bulwark', () => {
     const player1 = makePlayer({
       heroes: [
-        makeHero('engineer', 'squares', { energy: 4, rank: 'bronze' }),
-        makeHero('archer', 'diamonds'),
+        makeHero('engineer', 'suns', { energy: 4, rank: 'bronze' }),
+        makeHero('archer', 'moons'),
       ],
     })
     const results: [Panel, Panel, Panel, Panel, Panel] = [
-      p('diamond', 1, false),
-      p('diamond', 1, false),
-      p('hammer', 1, false),
-      p('hammer', 1, false),
-      p('square', 1, false),
+      p('moon', 1, false),
+      p('moon', 1, false),
+      p('shield', 1, false),
+      p('shield', 1, false),
+      p('sun', 1, false),
     ]
     const state = makeState({
       players: [player1, makePlayer()],
@@ -223,16 +223,16 @@ describe('resolve', () => {
     const player2 = makePlayer({ crownHp: 3 })
     const player1 = makePlayer({
       heroes: [
-        makeHero('warrior', 'squares', { energy: 3, rank: 'bronze' }),
-        makeHero('archer', 'diamonds'),
+        makeHero('warrior', 'suns', { energy: 3, rank: 'bronze' }),
+        makeHero('archer', 'moons'),
       ],
     })
     const results: [Panel, Panel, Panel, Panel, Panel] = [
-      p('diamond', 1, false),
-      p('diamond', 1, false),
-      p('hammer', 1, false),
-      p('hammer', 1, false),
-      p('square', 1, false),
+      p('moon', 1, false),
+      p('moon', 1, false),
+      p('shield', 1, false),
+      p('shield', 1, false),
+      p('sun', 1, false),
     ]
     const state = makeState({
       players: [player1, player2],
@@ -251,17 +251,17 @@ describe('resolve', () => {
     const player1 = makePlayer({
       crownHp: 0, // will be detected as dead
       heroes: [
-        makeHero('warrior', 'squares'),
-        makeHero('archer', 'diamonds'),
+        makeHero('warrior', 'suns'),
+        makeHero('archer', 'moons'),
       ],
     })
     const player2 = makePlayer({ crownHp: 0 })
     const results: [Panel, Panel, Panel, Panel, Panel] = [
-      p('square', 1, false),
-      p('diamond', 1, false),
-      p('hammer', 1, false),
-      p('hammer', 1, false),
-      p('square', 1, false),
+      p('sun', 1, false),
+      p('moon', 1, false),
+      p('shield', 1, false),
+      p('shield', 1, false),
+      p('sun', 1, false),
     ]
     const state = makeState({
       players: [player1, player2],
@@ -276,16 +276,16 @@ describe('resolve', () => {
     // Hero at gold rank with 9 XP, about to get 1 XP from panel
     const player1 = makePlayer({
       heroes: [
-        makeHero('warrior', 'squares', { rank: 'gold', xp: 9 }),
-        makeHero('archer', 'diamonds'),
+        makeHero('warrior', 'suns', { rank: 'gold', xp: 9 }),
+        makeHero('archer', 'moons'),
       ],
     })
     const results: [Panel, Panel, Panel, Panel, Panel] = [
-      p('square', 1, true),   // +1 XP -> triggers bomb at 10
-      p('diamond', 1, false),
-      p('hammer', 1, false),
-      p('square', 1, false),
-      p('square', 1, false),
+      p('sun', 1, true),   // +1 XP -> triggers bomb at 10
+      p('moon', 1, false),
+      p('shield', 1, false),
+      p('sun', 1, false),
+      p('sun', 1, false),
     ]
     const state = makeState({
       players: [player1, makePlayer()],
@@ -299,34 +299,34 @@ describe('resolve', () => {
 
   it('multi-symbol panels count correctly', () => {
     const results: [Panel, Panel, Panel, Panel, Panel] = [
-      p('square', 2, false),  // SS = 2
-      p('square', 2, false),  // SS = 2
-      p('square', 1, false),  // S = 1, total = 5
-      p('diamond', 2, false), // DD = 2
-      p('diamond', 2, false), // DD = 2, total = 4
+      p('sun', 2, false),  // SS = 2
+      p('sun', 2, false),  // SS = 2
+      p('sun', 1, false),  // S = 1, total = 5
+      p('moon', 2, false), // DD = 2
+      p('moon', 2, false), // DD = 2, total = 4
     ]
     const state = makeState({
       wheels: [makeWheelState(results), makeWheelState()],
     })
     const result = resolve(state)
-    // 5 squares - 2 = 3 energy for warrior (cost 3) -> activates
+    // 5 suns - 2 = 3 energy for warrior (cost 3) -> activates
     expect(result.state.players[0].heroes[0].energy).toBe(0) // reset
-    // 4 diamonds - 2 = 2 energy for archer (cost 4) -> doesn't activate
+    // 4 moons - 2 = 2 energy for archer (cost 4) -> doesn't activate
     expect(result.state.players[0].heroes[1].energy).toBe(2)
     // Warrior dealt 3 crown damage
     expect(result.state.players[1].crownHp).toBe(7)
   })
 
   it('full scripted turn with fixed state', () => {
-    // Scenario: Player has mage (squares, silver) and priest (diamonds, bronze)
+    // Scenario: Player has mage (suns, silver) and priest (moons, bronze)
     // Mage has 3 energy (needs 4), priest has 4 energy (needs 4, ready)
-    // Roll: 4 squares (1 starry), 3 diamonds, 0 hammers
+    // Roll: 4 suns (1 starry), 3 moons, 0 shields
     const player1 = makePlayer({
       crownHp: 8,
       bulwark: 0,
       heroes: [
-        makeHero('mage', 'squares', { rank: 'silver', energy: 3, xp: 5 }),
-        makeHero('priest', 'diamonds', { rank: 'bronze', energy: 4, xp: 3 }),
+        makeHero('mage', 'suns', { rank: 'silver', energy: 3, xp: 5 }),
+        makeHero('priest', 'moons', { rank: 'bronze', energy: 4, xp: 3 }),
       ],
     })
     const player2 = makePlayer({
@@ -334,11 +334,11 @@ describe('resolve', () => {
       bulwark: 2,
     })
     const results: [Panel, Panel, Panel, Panel, Panel] = [
-      p('square', 1, true),   // S+ (1 square, 1 XP for mage)
-      p('square', 1, false),  // S
-      p('square', 1, false),  // S
-      p('diamond', 1, false), // D
-      p('square', 1, false),  // S, total: 4 squares, 1 diamond
+      p('sun', 1, true),   // S+ (1 sun, 1 XP for mage)
+      p('sun', 1, false),  // S
+      p('sun', 1, false),  // S
+      p('moon', 1, false), // D
+      p('sun', 1, false),  // S, total: 4 suns, 1 moon
     ]
     const state = makeState({
       players: [player1, player2],
@@ -371,23 +371,23 @@ describe('resolve', () => {
     // Player 0 has warrior ready to attack
     const player1 = makePlayer({
       heroes: [
-        makeHero('warrior', 'squares', { energy: 3, rank: 'bronze' }),
-        makeHero('archer', 'diamonds'),
+        makeHero('warrior', 'suns', { energy: 3, rank: 'bronze' }),
+        makeHero('archer', 'moons'),
       ],
     })
     // Player 1 has warrior ready to attack
     const player2 = makePlayer({
       heroes: [
-        makeHero('warrior', 'squares', { energy: 3, rank: 'bronze' }),
-        makeHero('archer', 'diamonds'),
+        makeHero('warrior', 'suns', { energy: 3, rank: 'bronze' }),
+        makeHero('archer', 'moons'),
       ],
     })
     const emptyResults: [Panel, Panel, Panel, Panel, Panel] = [
-      p('square', 1, false),
-      p('diamond', 1, false),
-      p('hammer', 1, false),
-      p('hammer', 1, false),
-      p('square', 1, false),
+      p('sun', 1, false),
+      p('moon', 1, false),
+      p('shield', 1, false),
+      p('shield', 1, false),
+      p('sun', 1, false),
     ]
     const state = makeState({
       players: [player1, player2],

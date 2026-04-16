@@ -5,9 +5,7 @@
 The visual style is **brutalist-modern pixel art**: a marriage of three sensibilities that reinforce each other rather than compete.
 
 1. **Brutalist web design**: raw, exposed structure. Flat colors with zero gradients. Restricted palette. Monospaced technical typography. Sharp 1px borders. No drop shadows, no glows except where they communicate a rule. The UI is honest about being software and doesn't pretend to be a physical object.
-
 2. **Indie weird web**: the site-as-artifact feeling of Charcuterie, Are.na, design-engineer portfolios, and early-web specimen collections. Small, hand-crafted, opinionated, playful. Details that reward attention. UI patterns invented for this specific game rather than borrowed from off-the-shelf component libraries.
-
 3. **Modern pixel art**: the sprite craft of *Celeste*, *Hyper Light Drifter*, and *Sea of Stars*, but sitting inside a brutalist frame rather than a cinematic one. The pixels are the art; the UI around them is unapologetic engineering.
 
 The result should feel **modern yet retro**: paper-cream backgrounds and saturated ink-like accents evoking risograph prints and 1970s technical manuals, combined with crisp pixel sprites and the tactile 3D spin of the wheels. Looks like a piece of software that could exist today, but whose DNA includes punch cards, graph paper, and early arcade cabinets.
@@ -22,24 +20,26 @@ A four-identity palette. The base is the **paper/ink two-color brutalist scheme*
 
 ### Core Palette
 
-| Token | Hex | Use |
-|---|---|---|
-| `--paper` | `#F5F1E8` | Primary background (warm cream, uncoated paper feel) |
-| `--paper-dim` | `#EDE7D6` | Secondary surfaces, card fills, panel backgrounds |
-| `--ink` | `#0F172A` | Primary text, 1px borders, grid lines, technical labels |
-| `--ink-mid` | `#334155` | Secondary text, muted labels |
-| `--blue-ink` | `#1E40AF` | **Player accent** (saturated royal/IKB-adjacent blue) |
-| `--blue-wash` | `#DBEAFE` | Player zone background tint (very soft blue on cream) |
-| `--red-ink` | `#B91C1C` | **Opponent accent** (saturated oxblood/ink red) |
-| `--red-wash` | `#FEE2E2` | Opponent zone background tint |
-| `--square-gold` | `#D97706` | Squares symbol (mustard/amber, not neon yellow) |
-| `--diamond-teal` | `#0F766E` | Diamonds symbol (deep teal) |
-| `--hammer-steel` | `#475569` | Hammers symbol (cool graphite) |
-| `--midline-violet` | `#6D28D9` | Midline divider (deep saturated violet) |
-| `--bypass-magenta` | `#BE185D` | Bombs, bypass damage, critical alerts |
-| `--rank-bronze` | `#92400E` | Bronze rank indicator |
-| `--rank-silver` | `#64748B` | Silver rank indicator |
-| `--rank-gold` | `#B45309` | Gold rank indicator (slightly darker than Squares to differentiate) |
+
+| Token              | Hex       | Use                                                                 |
+| ------------------ | --------- | ------------------------------------------------------------------- |
+| `--paper`          | `#F5F1E8` | Primary background (warm cream, uncoated paper feel)                |
+| `--paper-dim`      | `#EDE7D6` | Secondary surfaces, card fills, panel backgrounds                   |
+| `--ink`            | `#0F172A` | Primary text, 1px borders, grid lines, technical labels             |
+| `--ink-mid`        | `#334155` | Secondary text, muted labels                                        |
+| `--blue-ink`       | `#1E40AF` | **Player accent** (saturated royal/IKB-adjacent blue)               |
+| `--blue-wash`      | `#DBEAFE` | Player zone background tint (very soft blue on cream)               |
+| `--red-ink`        | `#B91C1C` | **Opponent accent** (saturated oxblood/ink red)                     |
+| `--red-wash`       | `#FEE2E2` | Opponent zone background tint                                       |
+| `--square-gold`    | `#D97706` | Squares symbol (mustard/amber, not neon yellow)                     |
+| `--diamond-teal`   | `#0F766E` | Diamonds symbol (deep teal)                                         |
+| `--hammer-steel`   | `#475569` | Hammers symbol (cool graphite)                                      |
+| `--midline-violet` | `#6D28D9` | Midline divider (deep saturated violet)                             |
+| `--bypass-magenta` | `#BE185D` | Bombs, bypass damage, critical alerts                               |
+| `--rank-bronze`    | `#92400E` | Bronze rank indicator                                               |
+| `--rank-silver`    | `#64748B` | Silver rank indicator                                               |
+| `--rank-gold`      | `#B45309` | Gold rank indicator (slightly darker than Squares to differentiate) |
+
 
 ### Color Rules
 
@@ -121,6 +121,7 @@ The Sea of Stars board is a **dumbbell silhouette**: two circular zones (each ho
 ```
 
 Reading of this layout:
+
 - Each zone is a **pill-shaped plate** (1px ink outline on paper-dim fill) that encloses the figurine platforms, the crown box, and the wheel strip for that side.
 - **Figurine platforms** (`( o )`) are small oval pedestals drawn in pixel art: 1px ink outline, paper-dim fill, a 1px ellipse shadow below. The 32x32 figurine sprite sits on the platform.
 - **Wiring channels** (`────`) are 1px ink rules drawn inside the zone plate, connecting each figurine platform to the Crown. They visually group the trio as one circuit. When that figurine acts, the channel between platform and Crown briefly ink-bleeds in the zone's accent color (blue or red). This is our minimalist substitute for the glowing wooden runways in the SoS board.
@@ -368,14 +369,55 @@ Pixel-art sprite animations (6-12 frames each). Structure is always:
 4. **Impact** (1 frame, hit-stop 100-120ms): target sprite shows hit frame (stagger pose). Damage number spawns at impact point in mono pixel font, rises 8px over 300ms then fades. Shake and ink-bleed fire here.
 5. **Recovery** (2-3 frames): everyone returns to idle.
 
-Per-hero specifics layered on top:
+**Attack routing**: every attack computes `attackHeight > opponentBulwarkHeight`. If true, the projectile's terminal point is the opponent Crown; if false, it's the top of the opponent Bulwark. The visual path is routed accordingly — a blocked attack literally stops at the bulwark bar and the bulwark takes the hit animation instead of the crown.
 
-- **Warrior**: sword swing with 2-pixel ink arc trail. On impact, arc flashes once. If this is a killing blow, the arc holds for an extra 120ms.
-- **Mage**: fireball sprite with 3-pixel motion trail. On high-position variant, second fireball launches at a visibly higher arc, with hit-stop only on the second impact. The two fireballs feel like separate beats, not one big effect.
-- **Archer**: arrow on parabola. Parabola is drawn as stepped dots (grid-aligned), not a smooth curve. On impact, a 1-frame feather burst.
-- **Engineer**: wrench travels; meanwhile, own Bulwark segments slide in from the right edge of the bulwark bar, one per 60ms, with a mono `+1` per segment. Two beats of feedback, not one.
-- **Assassin**: dash-streak (1 frame across the target), hit-stop, opponent Bulwark segment shatters into 4 pixel fragments that fall 4px over 300ms with gravity-ease then disappear. Delayed hero's energy ticks down with a red ink-bleed on their energy bar and mono text `- 1 ENERGY`.
-- **Priest**: healing beam = pixel stream (stepped dots) from Priest to Crown. Crown HP number pops (120ms) when increased. Energy spark to partner = tiny 8x8 sprite that arcs and is absorbed (1-frame tick on partner's energy bar).
+Per-hero specifics:
+
+#### Warrior — Melee Arc (total ~300ms)
+- **Anticipation** 120ms: sprite swaps to wind-up frame
+- **Travel** — instant 1-frame ink streak from hero platform to target
+- **Impact** 100ms: hit-stop + 2-pixel ink arc trail that flashes once, holds 120ms extra if killing blow
+- **Recovery** 80ms
+- Height: ground-level. Always hits bulwark first if one exists.
+
+#### Mage — Dual Fireball (total ~1000ms)
+- Launches **two fireballs in sequence**, separated by 200ms:
+  1. **Ground fireball**: low arc, 4×4 pixel sprite with 3-pixel trail in attacker's ink color. Travel 500ms. Hits bulwark (if present) or crown at ground level.
+  2. **High fireball**: launches 200ms after the first, arcs visibly higher — crossing **above the midline bridge**. Travel 500ms. Always hits crown (height 6 > max bulwark 5).
+- Hit-stop 120ms only on the second impact — the two fireballs feel like separate beats, not one effect.
+- Killing blow? The high fireball impacts with rip + full 2px shake.
+
+#### Archer — Arrow Parabola (total ~700ms)
+- **Draw** 200ms: hero pulls back bow, sprite frame swap
+- **Travel** 400ms: arrow sprite (3 pixels long) traces a **parabola rendered as stepped dots** — 12-14 grid-aligned 2×2 pixel dots, never a smooth curve. Arc peaks at height 3.
+- **Impact** 100ms: 1-frame feather burst (4 small pixel fragments spraying ±4px from impact point)
+- If bulwark height ≥ 3: arrow terminates at the bulwark top; arc clips visibly. If bulwark < 3: arrow continues over and lands on crown.
+
+#### Engineer — Wrench + Build (total ~500ms, concurrent beats)
+- **Throw** 300ms: wrench sprite arcs forward to target, spinning (1-frame-per-30ms rotation)
+- **Impact** 120ms: wrench sticks for 1 frame, then disappears
+- **Build** (starts at t=0, parallel to throw): own bulwark bar fills two segments with snap-in animation — one segment per 150ms left-to-right, mono `+1` pixel text floats up and fades over 400ms per segment. Ends at t=300ms.
+- Two simultaneous beats — offense + defense — which is the Engineer's whole personality.
+
+#### Assassin — Dash Strike (total ~630ms)
+- **Dash** 200ms: hero sprite **disappears** from own platform; a 1-frame streak (6px wide, ink-colored) crosses the midline to the opponent crown. Bypasses bulwark.
+- **Strike** 80ms hit-stop: crown flashes magenta, HP rolls down, rip effect (1-frame chromatic offset)
+- **Strip** 200ms (concurrent with strike): opponent's topmost bulwark segment shatters into 4 pixel fragments that fall 4px over 300ms with gravity ease, then fade
+- **Delay** 150ms (concurrent): target hero's energy bar ticks down, red ink-bleed fires, mono text `-1 ENERGY` floats
+- **Return** 150ms: hero sprite rematerializes on own platform (1-frame fade-in)
+
+#### Priest — Heal + Charge (total ~500ms, concurrent beats)
+- **Raise staff** 200ms: hero sprite raises arms, gold shimmer behind
+- **Healing stream** 300ms: stepped-dot stream (2×2 gold pixels) flows from priest to own crown, one new dot every 40ms. Crown HP number pops (120ms) and rolls up when stream arrives.
+- **Energy spark** 300ms (concurrent): tiny 4×4 gold spark arcs from priest toward partner platform, absorbed on contact — 1-frame tick on partner's NRG bar.
+- No attack animation — this is explicitly non-offensive.
+
+#### Bomb — Arcing Projectile (total ~900ms, biggest beat short of KO)
+Triggered when a Gold-rank hero crosses 10 XP.
+- **Spawn** 200ms: pulsing violet `◆` glyph appears above the hero platform
+- **Arc** 500ms: large (8×8) violet-magenta sprite launches on a high grid-stepped parabola — arcs **over** the opponent zone plate, visibly above any bulwark. Trails 4 stepped dots in magenta.
+- **Impact** 200ms: full hit-stop + rip effect + hard 2px shake (8 frames) + 1-frame full-width `--bypass-magenta` flash on the crown. HP rolls down by 2. Resolution log types the bomb line at 80ms per character (half speed) to draw out gravity.
+- Always bypasses bulwark — the arc's visual path sells this.
 
 ### Hero Beats (The Big Moments)
 
@@ -387,6 +429,58 @@ These get the full juice treatment because they are rare and meaningful.
 - **XP threshold hit (10)**: the XP bar fills to exactly 10, ink-bleeds violet once, then the rank-up sequence fires.
 - **Bomb**: pixel bomb sprite launches on a high arc (use grid-stepped parabola). Anticipation: 200ms pause at apex where the bomb hangs. Impact: 1-frame full-screen magenta flash (not a wash, a single frame of `--bypass-magenta` fill with scan-line pattern overlay), then immediate hit-stop 300ms. Crown box gets a 2px magenta border that ink-bleeds away over 400ms. Resolution log types the damage out slower than normal, one character per 80ms instead of 20ms, to draw out the gravity.
 - **Victory**: the entire losing side fades to `--paper-dim` while the winning side's wash intensifies. Crown of the winner pops. Mono banner types out `> MATCH WON · PLAYER 01`. Dev-log footnote appears below.
+
+### Resolution Playback Timing
+
+Resolution is **played back**, not shown all at once. The server sends the complete event log in a single `RESOLVE_UPDATE`, then the client walks the events as a timeline, advancing visible state step-by-step. This transforms what could be a log dump into a genuine ceremonial moment.
+
+#### Step Cadence
+
+Each resolution step targets **~500ms** of screen time. Long enough to read, short enough to keep rhythm. Step durations vary within a narrow band:
+
+| Step | Target duration |
+|---|---|
+| Panel XP tick | 500ms |
+| Hammers → Bulwark | 500ms |
+| Energy accumulation | 500ms |
+| Hero activation (most) | 500-800ms (varies by figurine) |
+| Bulwark shatter | 400ms |
+| Crown damage | 500ms |
+| Crown heal | 400ms |
+| Bomb | 900ms (the hero beat) |
+| Rank up | 600ms |
+| Delay (Assassin) | 400ms |
+| KO / game over | 1200ms |
+
+Total resolution length scales with events. A minimum-event round (just two activations, no bombs or rank-ups) plays in ~2.5s. A maximum round (dual bombs, multiple activations, rank-ups, crown kills) can run ~8-10s. The ceiling is tolerable because every beat is earned.
+
+#### Wheel Highlighting Contract
+
+During every step, the wheel strips display a `highlightedPanels` set — which panels contributed to this step's effect. Both players' strips highlight simultaneously:
+
+- **Panel XP step**: only the starry panels granting XP glow gold
+- **Hammers step**: all hammer panels pulse steel; bulwark bar fills in sync
+- **Energy step (sun)**: all sun panels pulse gold, the sun hero's NRG bar fills
+- **Energy step (moon)**: all moon panels pulse teal, the moon hero's NRG bar fills
+- **Activation/bomb/hit steps**: contributing panels fade to 50% to de-emphasize (attention is on the animation overlay), re-emerge afterward
+
+**Visual highlighting treatments:**
+1. Result chip below the drum pulses its symbol color (100ms flash)
+2. The 3D drum face brightens by ~30% value via material tint for 80ms
+3. A 1px ink rule **draws in** left-to-right across all highlighted wheels, stepped in 8px segments (200ms). This is the "matching connection" — the visible computation.
+
+#### Skip / Accelerate UX
+
+- **Click anywhere on the board during playback** — jumps to the next step boundary immediately
+- **Double-click** — skips to the end of resolution (final state applied instantly, log shown in full)
+- **Reduced-motion setting** in Settings menu — halves all step durations and disables shake/rip effects; final state still displays
+- **Focus-mode setting** — hides the resolution log margin; keeps the animations
+
+#### Spectator Playback
+
+Spectators see identical playback to players — each spectator client runs the same timeline independently. No server-side streaming; timing is a client concern.
+
+---
 
 ### Ambient Juice (Always-On, Very Quiet)
 
@@ -410,6 +504,7 @@ These are the details that make the interface feel alive without ever calling at
 ### Animation Budget
 
 Every frame has a job. For any hero activation we allow at most:
+
 - 1 hit-stop
 - 1 camera nudge
 - 1 ink-bleed OR rip (not both)

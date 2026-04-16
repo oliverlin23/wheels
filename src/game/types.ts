@@ -1,4 +1,4 @@
-export type PanelSymbol = 'square' | 'diamond' | 'hammer'
+export type PanelSymbol = 'sun' | 'moon' | 'shield'
 
 /** A panel on a wheel. count = how many symbols (e.g. SS = square with count 2). xp = starry background */
 export type Panel = {
@@ -30,7 +30,7 @@ export type HeroState = {
   rank: Rank
   energy: number
   xp: number
-  slot: 'squares' | 'diamonds'
+  slot: 'suns' | 'moons'
 }
 
 export type PlayerState = {
@@ -55,6 +55,12 @@ export type GameState = {
   winner: 0 | 1 | 'tie' | null
 }
 
+/** A reference to a panel on a specific player's wheel. */
+export type PanelRef = {
+  player: 0 | 1
+  wheelIdx: 0 | 1 | 2 | 3 | 4
+}
+
 export type LogEvent = {
   type:
     | 'panel_xp'
@@ -69,5 +75,9 @@ export type LogEvent = {
     | 'rank_up'
     | 'game_over'
   detail: string
+  /** Player index this event belongs to (the actor/attacker). Undefined for game-level events. */
+  player?: 0 | 1 | undefined
+  /** Which panels (on which wheel) contributed to this event. */
+  panelRefs?: PanelRef[] | undefined
   data?: Record<string, unknown> | undefined
 }

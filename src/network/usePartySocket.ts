@@ -5,6 +5,7 @@ import type { WheelState } from '../game/types'
 import { useGameStore } from '../store/game'
 import { useLogStore } from '../store/log'
 import { useLobbyStore } from '../store/lobby'
+import { usePlaybackStore } from '../resolve/playbackStore'
 
 export function usePartySocket(roomId: string | null): {
   connected: boolean
@@ -43,6 +44,9 @@ export function usePartySocket(roomId: string | null): {
       switch (msg.type) {
         case 'LOBBY_STATE':
           useLobbyStore.getState().setLobbyState(msg.players, msg.spectators, msg.phase)
+          if (msg.yourPlayer !== undefined) {
+            useLobbyStore.getState().setMyPlayer(msg.yourPlayer)
+          }
           break
 
         case 'MATCH_START':
@@ -66,23 +70,62 @@ export function usePartySocket(roomId: string | null): {
           break
         }
 
-        case 'OPPONENT_READY': {
-          const game = useGameStore.getState().game
+        case 'CONFIRMED': {
+          // Server acknowledged our confirm — set our own confirmed flag
           const myIdx = useLobbyStore.getState().myPlayer as 0 | 1
-          const oppIdx: 0 | 1 = myIdx === 0 ? 1 : 0
-          const newConfirmed = [...game.confirmed] as [boolean, boolean]
-          newConfirmed[oppIdx] = true
-          useGameStore.getState().setGame({ ...game, confirmed: newConfirmed })
+          const game = useGameStore.getState().game
+          const confirmed = [...game.confirmed] as [boolean, boolean]
+          confirmed[myIdx] = true
+          useGameStore.getState().setGame({ ...game, confirmed })
           break
         }
 
-        case 'REVEAL':
-          useGameStore.getState().setGame(msg.game)
+        case 'OPPONENT_READY': {
+          // Opponent confirmed — set their confirmed flag
+          const myIdx = useLobbyStore.getState().myPlayer as 0 | 1
+          const oppIdx: 0 | 1 = myIdx === 0 ? 1 : 0
+          const game = useGameStore.getState().game
+          const confirmed = [...game.confirmed] as [boolean, boolean]
+          confirmed[oppIdx] = true
+          useGameStore.getState().setGame({ ...game, confirmed })
           break
+        }
 
-        case 'RESOLVE_UPDATE':
-          useGameStore.getState().setGame(msg.game)
-          useLogStore.getState().pushEvents(msg.events)
+        case 'REVEAL': {
+          // During an active playback OR during the reveal pause before
+          // playback starts, REVEAL messages should update the pending final
+          // game (so we land on the latest state) rather than overwriting the
+          // currently-displayed state.
+          const pb = usePlaybackStore.getState()
+          if (pb.isPlayingBack || pb.isPendingPlayback) {
+            usePlaybackStore.setState({ pendingFinalGame: msg.game })
+          } else {
+            useGameStore.getState().setGame(msg.game)
+          }
+          break
+        }
+
+        case 'RESOLVE_UPDATE': {
+          // Reveal moment: show wheels for ~1200ms before starting playback.
+          // During this pause, isPendingPlayback is true so subsequent REVEAL
+          // messages (next round state) queue instead of clobbering the display.
+          const preResolve = useGameStore.getState().game
+          usePlaybackStore.getState().beginReveal(preResolve)
+          const events = msg.events
+          const finalGame = msg.game
+          setTimeout(() => {
+            usePlaybackStore.getState().startPlayback(events, finalGame, preResolve)
+          }, 1200)
+          break
+        }
+
+        case 'RETURN_TO_LOBBY':
+          // Server reset the room for rematch — go back to hero-select
+          useLobbyStore.getState().setLobbyState(
+            useLobbyStore.getState().players,
+            useLobbyStore.getState().spectatorCount,
+            'hero-select',
+          )
           break
 
         case 'ERROR':

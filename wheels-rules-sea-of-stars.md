@@ -268,3 +268,4 @@ This is a rebalanced version of the Wheels minigame from *Sea of Stars*. Key cha
 - **XP carries over.** Excess XP beyond the threshold is retained. Eliminates the "wasted XP" feel and reduces the leveling speed gap between fast-cycling and slow-cycling Heroes.
 - **XP threshold raised from 6 to 10.** Slows down rank progression and bomb frequency. Heroes spend more time at each rank, giving the stat differences between Bronze/Silver/Gold more room to matter. Bombs are a late-game payoff rather than a mid-game inevitability.
 - **Bulwark decays.** Loses 1 height/HP at the start of your turn. Prevents permanent walls from Engineer spam; defense is now a resource that requires active upkeep.
+

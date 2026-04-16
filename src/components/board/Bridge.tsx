@@ -9,7 +9,7 @@ export const Bridge: FC = () => {
     <div
       style={{
         position: 'absolute',
-        left: (480 - 48) / 2,
+        left: (520 - 48) / 2,
         width: 48,
         height: 24,
       }}
@@ -18,9 +18,9 @@ export const Bridge: FC = () => {
       <div
         style={{
           position: 'absolute',
-          left: -((480 - 48) / 2),
+          left: -((520 - 48) / 2),
           top: 16,
-          width: 480,
+          width: 520,
           height: 1,
           backgroundColor: violet,
         }}

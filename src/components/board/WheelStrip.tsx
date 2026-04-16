@@ -1,5 +1,6 @@
 import type { FC } from 'react'
-import type { Panel, PanelSymbol } from '../../game/types'
+import type { Panel } from '../../game/types'
+import { SYMBOL_LABEL, SYMBOL_COLOR } from '../../game/symbols'
 
 type WheelStripProps = {
   results: [Panel, Panel, Panel, Panel, Panel] | null
@@ -7,20 +8,8 @@ type WheelStripProps = {
   onLockWheel: (index: number) => void
 }
 
-const SYMBOL_LETTER: Record<PanelSymbol, string> = {
-  square: 'S',
-  diamond: 'D',
-  hammer: 'H',
-}
-
-const SYMBOL_COLOR: Record<PanelSymbol, string> = {
-  square: 'var(--color-square-gold)',
-  diamond: 'var(--color-diamond-teal)',
-  hammer: 'var(--color-hammer-steel)',
-}
-
 function formatPanel(panel: Panel): string {
-  const letter = SYMBOL_LETTER[panel.symbol]
+  const letter = SYMBOL_LABEL[panel.symbol]
   const base = panel.count > 1 ? letter.repeat(panel.count) : letter
   return panel.xp ? base + '+' : base
 }

@@ -3,6 +3,7 @@
 A phased plan for building the web game from the existing rules and visual design docs. Each phase is independently shippable and produces something you can look at or play with. Later phases depend only on earlier ones.
 
 Companion docs:
+
 - `wheels-rules-sea-of-stars.md` -- the rebalanced rules.
 - `wheels-visual-design.md` -- visual + animation spec.
 
@@ -10,18 +11,18 @@ Companion docs:
 
 ## Progress
 
-- [x] Phase 0 -- Repository Scaffold
-- [x] Phase 1 -- Game Model and Rule Engine
-- [x] Phase 2 -- State Layer
-- [x] Phase 3 -- Static Board Layout
-- [x] Phase 4 -- Sprite Pipeline
-- [x] Phase 5 -- Wheels (3D)
-- [ ] Phase 6 -- Figurine Activation (skipped, waiting for final sprite art)
-- [x] Phase 7 -- Juice Pass (animation primitives + resolution log)
-- [x] Phase 8 -- Menus, Match End, Accessibility
-- [ ] Phase 9 -- Sound
-- [ ] Phase 10 -- Balance Tooling + Polish
-- [x] Multiplayer -- PartyKit server, simultaneous turns, lobby system
+- Phase 0 -- Repository Scaffold
+- Phase 1 -- Game Model and Rule Engine
+- Phase 2 -- State Layer
+- Phase 3 -- Static Board Layout
+- Phase 4 -- Sprite Pipeline
+- Phase 5 -- Wheels (3D)
+- Phase 6 -- Figurine Activation (skipped, waiting for final sprite art)
+- Phase 7 -- Juice Pass (animation primitives + resolution log)
+- Phase 8 -- Menus, Match End, Accessibility
+- Phase 9 -- Sound
+- Phase 10 -- Balance Tooling + Polish
+- Multiplayer -- PartyKit server, simultaneous turns, lobby system
 
 ### Major Architecture Change: Simultaneous Turns
 
@@ -55,6 +56,7 @@ The original plan assumed alternating turns (`currentPlayer`). This was changed 
 **Goal**: empty repo boots to a blank paper-cream canvas with the visible 8px grid.
 
 Tasks
+
 - Initialize Vite + React + TS project.
 - Install deps: `three @react-three/fiber @react-three/drei zustand xstate @xstate/react howler tailwindcss`.
 - Install dev deps: `vitest @testing-library/react @playwright/test eslint prettier typescript @types/three @types/howler`.
@@ -73,6 +75,7 @@ Exit criteria: `pnpm dev` shows a paper-cream page with the faint 8px grid visib
 **Goal**: a pure, side-effect-free TypeScript module that implements the game rules. No UI yet. Testable with Vitest.
 
 Tasks
+
 - Define types in `src/game/types.ts`: `Figurine`, `Rank`, `Panel` (Square/Diamond/Hammer/XP/Bypass), `WheelState`, `PlayerState`, `GameState`.
 - Implement `src/game/rules/`:
   - `panels.ts`: the per-wheel panel distribution tables (from rules doc).
@@ -98,6 +101,7 @@ Exit criteria: `pnpm test` passes with >90% coverage on `src/game/rules/`. Given
 **Goal**: wire the rule engine into Zustand and XState. Still no visual output.
 
 Tasks
+
 - `src/store/game.ts`: Zustand store holding canonical `GameState`. Actions: `spin`, `lockWheel`, `playBomb`, `nextTurn`.
 - `src/machine/turn.ts`: XState FSM with states `idle → rolling → settling → resolving → acting → cleanup → next`. Events: `SPIN`, `SETTLE_DONE`, `RESOLVE_DONE`, `ACT_DONE`. The machine calls rule-engine functions on entry/exit actions.
 - `src/store/log.ts`: a separate Zustand slice holding an append-only event log. Every rule-engine `LogEvent` pushes a line.
@@ -112,6 +116,7 @@ Exit criteria: clicking "Spin" in the debug view steps through an FSM-driven tur
 **Goal**: the board chassis, with no wheels and no animations. Pure flat pixel-art layout at 480×270.
 
 Tasks
+
 - Implement the Tailwind theme colors + a custom CSS layer for `--paper`, `--ink`, etc.
 - Build `<BoardChassis>` component with the dumbbell silhouette: two zone plates + central bridge + two midline rules + header/footer rows.
 - Build `<ZonePlate side="player|opponent">`: pill outline with wash, wiring channels as 1px SVG rules, section label `// PLAYER` in mono.
@@ -132,6 +137,7 @@ Exit criteria: page renders the full board architecture exactly matching the ASC
 **Goal**: pixel art appearing on the board.
 
 Tasks
+
 - Decide on sprite source: author in Aseprite or commission; for scaffolding, use 32×32 placeholder sprites (single idle frame per figurine + simple palette swaps for rank).
 - `scripts/sprites.sh`: Aseprite CLI export → `public/sprites/{figurine}.png` + `public/sprites/{figurine}.json`.
 - `<Sprite name frame scale>` React component: loads atlas JSON, renders the correct sub-rect with `image-rendering: pixelated`.
@@ -148,6 +154,7 @@ Exit criteria: board shows six figurine sprites on their platforms, crown glyphs
 **Goal**: the 5 drums spinning and settling with pixel-art faces.
 
 Tasks
+
 - `<WheelsCanvas>`: a react-three-fiber `<Canvas>` positioned over two rails (top + bottom zone plates). Two `<WheelStrip>` instances reading the same wheel state.
 - `<WheelDrum panelState spinning settled>`:
   - 8-sided cylindrical geometry (or 8 flat quads arranged in a ring).
@@ -170,6 +177,7 @@ Exit criteria: click Spin → wheels do the full ceremony, settle on determinist
 **Goal**: figurines act, damage happens, the game actually plays.
 
 Tasks
+
 - `<FigurineAnimator>`: subscribes to FSM state `acting`. When a figurine activates, plays its sprite sequence (windup → release → hit) against the opposing platform.
 - Projectile components:
   - `<Fireball>`, `<Arrow>`, `<Wrench>`, `<HealingBeam>`, `<DashStreak>` — each is an SVG or canvas element that steps across the midline in grid-aligned pixel steps.
@@ -188,6 +196,7 @@ Exit criteria: from a fresh match, spin → activate → damage → state correc
 **Goal**: apply the animation primitives from the design doc throughout.
 
 Tasks
+
 - Build a reusable `juice.ts` utility:
   - `useHitStop(durationMs)` — freezes a render loop.
   - `useShake(intensity, frames)` — returns an `(x,y)` offset in whole pixels.
@@ -214,6 +223,7 @@ Exit criteria: a full match plays start-to-finish with all the juice beats landi
 **Goal**: the game wraps around itself.
 
 Tasks
+
 - Main menu: wordmark type-on, "New Match" + "Specimen Catalog" + "Settings" buttons.
 - Specimen Catalog: grid of all 6 figurines. Click → full specimen inspect view (from design doc).
 - Settings panel: toggles for reduced motion, colorblind mode, high contrast, focus mode (hides log), palette swap (paper ↔ night print).
@@ -233,6 +243,7 @@ Exit criteria: end-to-end user flow works from main menu → match → victory �
 **Goal**: audio layer.
 
 Tasks
+
 - Author or source a small sound palette: wheel tick, wheel settle, hit-stop stinger, bulwark hit, crown hit, bypass hit, KO, rank-up, bomb, match-win, mono-log character tick, button click, menu navigation. Chiptune + paper-rustle textures per the design doc.
 - `src/audio/` with Howler setup. Volume categories (sfx, music, ui) with separate levers in settings.
 - Wire SFX to the juice primitives (hit-stop triggers stinger, shake triggers hit, number-roll triggers ticks).
@@ -247,6 +258,7 @@ Exit criteria: all beats have sound, settings let the user turn categories on/of
 **Goal**: headless simulator and balance iteration.
 
 Tasks
+
 - `bin/simulate.ts`: Node entry point that imports the pure rule engine. Runs N matches with seeded RNG, records per-turn stats (crown damage dealt, figurine win rates, match length, priest-only stall rate, bypass rate).
 - `bin/balance-report.ts`: parses simulator output, prints a mono table of imbalance flags (e.g., Mage win rate >55%).
 - Small adjustments to figurine tables get re-run through the simulator.

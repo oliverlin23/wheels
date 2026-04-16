@@ -1,21 +1,12 @@
 import type { FC } from 'react'
 
 type MidlineRulesProps = {
-  round: number
   roundPhase: 'spinning' | 'reveal' | 'resolving' | 'done'
 }
 
 export const MidlineRules: FC<MidlineRulesProps> = ({ roundPhase }) => {
   const violet = 'var(--color-midline-violet)'
   const paper = 'var(--color-paper)'
-
-  const ruleStyle: React.CSSProperties = {
-    position: 'absolute',
-    left: 0,
-    width: 480,
-    height: 1,
-    backgroundColor: violet,
-  }
 
   const phaseLabel =
     roundPhase === 'spinning' ? 'SPINNING'
@@ -28,53 +19,37 @@ export const MidlineRules: FC<MidlineRulesProps> = ({ roundPhase }) => {
       style={{
         position: 'absolute',
         left: 0,
-        width: 480,
-        height: 12,
+        width: 520,
+        height: 8,
       }}
     >
-      {/* Upper rule */}
-      <div style={{ ...ruleStyle, top: 0 }} />
+      {/* Single violet rule */}
+      <div style={{
+        position: 'absolute',
+        left: 0,
+        top: 4,
+        width: 520,
+        height: 1,
+        backgroundColor: violet,
+      }} />
 
-      {/* Centered label on the upper rule */}
+      {/* Phase label — centered, punches through rule */}
       <div
         style={{
           position: 'absolute',
-          top: -5,
+          top: -1,
           left: '50%',
           transform: 'translateX(-50%)',
           fontFamily: '"IBM Plex Mono", monospace',
           fontSize: 7,
           fontWeight: 400,
           textTransform: 'uppercase',
-          letterSpacing: '0.08em',
+          letterSpacing: '0.2em',
           color: violet,
           backgroundColor: paper,
-          padding: '0 4px',
+          padding: '0 8px',
           whiteSpace: 'nowrap',
-          fontFeatureSettings: '"tnum"',
-        }}
-      >
-        [ NEUTRAL STAGE ]
-      </div>
-
-      {/* Lower rule */}
-      <div style={{ ...ruleStyle, top: 12 }} />
-
-      {/* Phase indicator */}
-      <div
-        style={{
-          position: 'absolute',
-          top: -5,
-          right: 8,
-          fontFamily: '"IBM Plex Mono", monospace',
-          fontSize: 7,
-          fontWeight: 400,
-          textTransform: 'uppercase',
-          color: violet,
-          backgroundColor: paper,
-          padding: '0 4px',
-          whiteSpace: 'nowrap',
-          fontFeatureSettings: '"tnum"',
+          lineHeight: '10px',
         }}
       >
         {phaseLabel}

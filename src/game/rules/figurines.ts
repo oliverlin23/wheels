@@ -87,14 +87,14 @@ export function activateFigurine(
         events.push({
           type: 'damage',
           detail: `Warrior deals ${wBulwarkDmg} bulwark damage`,
-          data: { target: 'bulwark', amount: wBulwarkDmg },
+          data: { target: 'bulwark', amount: wBulwarkDmg, figurine: 'warrior', blocked: true },
         })
       } else {
         newDefender = { ...newDefender, crownHp: Math.max(0, newDefender.crownHp - wCrownDmg) }
         events.push({
           type: 'damage',
           detail: `Warrior deals ${wCrownDmg} crown damage`,
-          data: { target: 'crown', amount: wCrownDmg },
+          data: { target: 'crown', amount: wCrownDmg, figurine: 'warrior', blocked: false },
         })
       }
       break
@@ -110,14 +110,14 @@ export function activateFigurine(
         events.push({
           type: 'damage',
           detail: `Mage ground fireball deals ${ground.bulwarkDamage} bulwark damage`,
-          data: { target: 'bulwark', amount: ground.bulwarkDamage },
+          data: { target: 'bulwark', amount: ground.bulwarkDamage, figurine: 'mage', blocked: true },
         })
       } else {
         newDefender = { ...newDefender, crownHp: Math.max(0, newDefender.crownHp - ground.crownDamage) }
         events.push({
           type: 'damage',
           detail: `Mage ground fireball deals ${ground.crownDamage} crown damage`,
-          data: { target: 'crown', amount: ground.crownDamage },
+          data: { target: 'crown', amount: ground.crownDamage, figurine: 'mage', blocked: false },
         })
       }
 
@@ -126,7 +126,7 @@ export function activateFigurine(
       events.push({
         type: 'damage',
         detail: `Mage high fireball deals ${high.crownDamage} crown damage`,
-        data: { target: 'crown', amount: high.crownDamage },
+        data: { target: 'crown', amount: high.crownDamage, figurine: 'mage', blocked: false },
       })
       break
     }
@@ -140,14 +140,14 @@ export function activateFigurine(
         events.push({
           type: 'damage',
           detail: `Archer deals ${aCrownDmg} crown damage`,
-          data: { target: 'crown', amount: aCrownDmg },
+          data: { target: 'crown', amount: aCrownDmg, figurine: 'archer', blocked: false },
         })
       } else {
         newDefender = { ...newDefender, bulwark: Math.max(0, newDefender.bulwark - aBulwarkDmg) }
         events.push({
           type: 'damage',
           detail: `Archer deals ${aBulwarkDmg} bulwark damage`,
-          data: { target: 'bulwark', amount: aBulwarkDmg },
+          data: { target: 'bulwark', amount: aBulwarkDmg, figurine: 'archer', blocked: true },
         })
       }
       break
@@ -162,14 +162,14 @@ export function activateFigurine(
         events.push({
           type: 'damage',
           detail: `Engineer deals ${eBulwarkDmg} bulwark damage`,
-          data: { target: 'bulwark', amount: eBulwarkDmg },
+          data: { target: 'bulwark', amount: eBulwarkDmg, figurine: 'engineer', blocked: true },
         })
       } else {
         newDefender = { ...newDefender, crownHp: Math.max(0, newDefender.crownHp - eCrownDmg) }
         events.push({
           type: 'damage',
           detail: `Engineer deals ${eCrownDmg} crown damage`,
-          data: { target: 'crown', amount: eCrownDmg },
+          data: { target: 'crown', amount: eCrownDmg, figurine: 'engineer', blocked: false },
         })
       }
 
@@ -194,7 +194,7 @@ export function activateFigurine(
       events.push({
         type: 'damage',
         detail: `Assassin deals ${asnCrownDmg} crown damage (bypasses bulwark)`,
-        data: { target: 'crown', amount: asnCrownDmg },
+        data: { target: 'crown', amount: asnCrownDmg, figurine: 'assassin', blocked: false },
       })
 
       // Delay opponent's hero closest to activating

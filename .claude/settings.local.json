@@ -21,7 +21,11 @@
       "Bash(npx vite:*)",
       "Read(//tmp/**)",
       "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); [print\\(f'{k}: {list\\(v.keys\\(\\)\\)[:3]} => first frame: {list\\(v.values\\(\\)\\)[0]}'\\) for k,v in d.items\\(\\)]\")",
-      "Bash(npx tsc:*)"
+      "Bash(npx tsc:*)",
+      "Bash(pnpm test:*)",
+      "Bash(md5:*)",
+      "Bash(find:*)",
+      "WebSearch"
     ]
   }
 }

@@ -9,32 +9,38 @@ type PlatformProps = {
   hero: HeroState
 }
 
-const RANK_COLORS: Record<string, string> = {
-  bronze: 'var(--color-rank-bronze)',
-  silver: 'var(--color-rank-silver)',
-  gold: 'var(--color-rank-gold)',
+const SLOT_COLORS: Record<string, string> = {
+  suns: 'var(--color-sun-gold)',
+  moons: 'var(--color-moon-teal)',
 }
 
+const SLOT_GLYPHS: Record<string, string> = {
+  suns: '☉',
+  moons: '☾',
+}
 
 function BarSegments({
   filled,
   total,
   label,
+  accentColor,
 }: {
   filled: number
   total: number
   label: string
+  accentColor?: string
 }) {
   const segments = []
   for (let i = 0; i < total; i++) {
+    const isFilled = i < filled
     segments.push(
       <div
         key={i}
         style={{
           width: 4,
           height: 4,
-          backgroundColor: i < filled ? 'var(--color-ink)' : 'var(--color-ink)',
-          opacity: i < filled ? 1 : 0.15,
+          backgroundColor: isFilled ? (accentColor ?? 'var(--color-ink)') : 'var(--color-ink)',
+          opacity: isFilled ? 1 : 0.1,
         }}
       />,
     )
@@ -49,23 +55,23 @@ function BarSegments({
         fontFamily: '"IBM Plex Mono", monospace',
         fontSize: 7,
         fontFeatureSettings: '"tnum"',
-        color: 'var(--color-ink)',
+        color: 'var(--color-ink-mid)',
       }}
     >
       <span
         style={{
-          width: 24,
+          width: 20,
           textAlign: 'right',
-          fontSize: 7,
-          color: 'var(--color-ink-mid)',
+          fontSize: 6,
           textTransform: 'uppercase',
-          letterSpacing: 0.5,
+          letterSpacing: '0.05em',
+          opacity: 0.7,
         }}
       >
         {label}
       </span>
       <div style={{ display: 'flex', gap: 1, marginLeft: 2 }}>{segments}</div>
-      <span style={{ marginLeft: 2 }}>
+      <span style={{ marginLeft: 2, color: 'var(--color-ink)', fontSize: 7 }}>
         {String(filled).padStart(2, '0')}/{String(total).padStart(2, '0')}
       </span>
     </div>
@@ -74,12 +80,13 @@ function BarSegments({
 
 export default function Platform({ hero }: PlatformProps) {
   const stats = getStats(hero.name, hero.rank)
-  const rankColor = RANK_COLORS[hero.rank]
+  const slotColor = SLOT_COLORS[hero.slot] ?? 'var(--color-ink-mid)'
+  const slotGlyph = SLOT_GLYPHS[hero.slot] ?? ''
 
   return (
     <div
       style={{
-        width: 80,
+        width: 86,
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -94,31 +101,35 @@ export default function Platform({ hero }: PlatformProps) {
         />
       </div>
 
-      {/* Oval pedestal */}
+      {/* Oval pedestal — slot-colored (sun=gold, moon=teal) */}
       <div
         style={{
-          width: 40,
+          width: 44,
           height: 10,
           borderRadius: '50%',
           backgroundColor: 'var(--color-paper-dim)',
-          border: `1px solid ${rankColor}`,
+          border: `1px solid ${slotColor}`,
           position: 'relative',
           zIndex: 1,
         }}
       />
 
-      {/* Figurine name */}
+      {/* Hero name with slot glyph */}
       <div
         style={{
           fontFamily: '"IBM Plex Mono", monospace',
           fontSize: 8,
-          fontFeatureSettings: '"tnum"',
+          fontWeight: 700,
           color: 'var(--color-ink)',
           textTransform: 'uppercase',
-          letterSpacing: 0.5,
-          marginTop: 4,
+          letterSpacing: '0.1em',
+          marginTop: 2,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 3,
         }}
       >
+        <span style={{ color: slotColor, fontSize: 9, lineHeight: 1 }}>{slotGlyph}</span>
         {hero.name}
       </div>
 
@@ -135,6 +146,7 @@ export default function Platform({ hero }: PlatformProps) {
           filled={hero.energy}
           total={stats.energyCost}
           label="NRG"
+          accentColor={slotColor}
         />
         <BarSegments filled={hero.xp} total={XP_THRESHOLD} label="XP" />
       </div>

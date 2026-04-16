@@ -15,58 +15,58 @@ function p(symbol: PanelSymbol, count: number, xp: boolean): Panel {
 export const WHEELS: Panel[][] = [
   // Wheel 1: S, D, S, S+, D, H, DD+, H
   [
-    p('square', 1, false),
-    p('diamond', 1, false),
-    p('square', 1, false),
-    p('square', 1, true),
-    p('diamond', 1, false),
-    p('hammer', 1, false),
-    p('diamond', 2, true),
-    p('hammer', 1, false),
+    p('sun', 1, false),
+    p('moon', 1, false),
+    p('sun', 1, false),
+    p('sun', 1, true),
+    p('moon', 1, false),
+    p('shield', 1, false),
+    p('moon', 2, true),
+    p('shield', 1, false),
   ],
   // Wheel 2: S+, D, SS, D+, S, H, DD, HH
   [
-    p('square', 1, true),
-    p('diamond', 1, false),
-    p('square', 2, false),
-    p('diamond', 1, true),
-    p('square', 1, false),
-    p('hammer', 1, false),
-    p('diamond', 2, false),
-    p('hammer', 2, false),
+    p('sun', 1, true),
+    p('moon', 1, false),
+    p('sun', 2, false),
+    p('moon', 1, true),
+    p('sun', 1, false),
+    p('shield', 1, false),
+    p('moon', 2, false),
+    p('shield', 2, false),
   ],
   // Wheel 3: S+, D, D+, S, D, HH, SS, HH
   [
-    p('square', 1, true),
-    p('diamond', 1, false),
-    p('diamond', 1, true),
-    p('square', 1, false),
-    p('diamond', 1, false),
-    p('hammer', 2, false),
-    p('square', 2, false),
-    p('hammer', 2, false),
+    p('sun', 1, true),
+    p('moon', 1, false),
+    p('moon', 1, true),
+    p('sun', 1, false),
+    p('moon', 1, false),
+    p('shield', 2, false),
+    p('sun', 2, false),
+    p('shield', 2, false),
   ],
   // Wheel 4: S, D, S+, D, HH, S, D+, HH
   [
-    p('square', 1, false),
-    p('diamond', 1, false),
-    p('square', 1, true),
-    p('diamond', 1, false),
-    p('hammer', 2, false),
-    p('square', 1, false),
-    p('diamond', 1, true),
-    p('hammer', 2, false),
+    p('sun', 1, false),
+    p('moon', 1, false),
+    p('sun', 1, true),
+    p('moon', 1, false),
+    p('shield', 2, false),
+    p('sun', 1, false),
+    p('moon', 1, true),
+    p('shield', 2, false),
   ],
   // Wheel 5: S, DD+, HH, SS, DD, SS+, D, HH
   [
-    p('square', 1, false),
-    p('diamond', 2, true),
-    p('hammer', 2, false),
-    p('square', 2, false),
-    p('diamond', 2, false),
-    p('square', 2, true),
-    p('diamond', 1, false),
-    p('hammer', 2, false),
+    p('sun', 1, false),
+    p('moon', 2, true),
+    p('shield', 2, false),
+    p('sun', 2, false),
+    p('moon', 2, false),
+    p('sun', 2, true),
+    p('moon', 1, false),
+    p('shield', 2, false),
   ],
 ]
 
@@ -86,11 +86,11 @@ export function countSymbols(results: Panel[], symbol: PanelSymbol): number {
 
 /**
  * Count XP panels matching a slot's symbol.
- * 'squares' slot matches 'square' panels with xp=true.
- * 'diamonds' slot matches 'diamond' panels with xp=true.
+ * 'suns' slot matches 'sun' panels with xp=true.
+ * 'moons' slot matches 'moon' panels with xp=true.
  */
-export function countXp(results: Panel[], slot: 'squares' | 'diamonds'): number {
-  const symbol: PanelSymbol = slot === 'squares' ? 'square' : 'diamond'
+export function countXp(results: Panel[], slot: 'suns' | 'moons'): number {
+  const symbol: PanelSymbol = slot === 'suns' ? 'sun' : 'moon'
   let total = 0
   for (const panel of results) {
     if (panel.xp && panel.symbol === symbol) {

@@ -8,7 +8,7 @@ function makeHero(overrides: Partial<HeroState> = {}): HeroState {
     rank: 'bronze',
     energy: 0,
     xp: 0,
-    slot: 'squares',
+    slot: 'suns',
     ...overrides,
   }
 }
@@ -101,7 +101,7 @@ describe('applyBomb', () => {
     const defender: PlayerState = {
       crownHp: 10,
       bulwark: 5,
-      heroes: [makeHero(), makeHero({ name: 'mage', slot: 'diamonds' })],
+      heroes: [makeHero(), makeHero({ name: 'mage', slot: 'moons' })],
     }
 
     const result = applyBomb(defender)
@@ -116,7 +116,7 @@ describe('applyBomb', () => {
     const defender: PlayerState = {
       crownHp: 1,
       bulwark: 3,
-      heroes: [makeHero(), makeHero({ name: 'mage', slot: 'diamonds' })],
+      heroes: [makeHero(), makeHero({ name: 'mage', slot: 'moons' })],
     }
 
     const result = applyBomb(defender)
@@ -128,7 +128,7 @@ describe('applyBomb', () => {
     const defender: PlayerState = {
       crownHp: 10,
       bulwark: 5,
-      heroes: [makeHero(), makeHero({ name: 'mage', slot: 'diamonds' })],
+      heroes: [makeHero(), makeHero({ name: 'mage', slot: 'moons' })],
     }
     const original = JSON.parse(JSON.stringify(defender))
 

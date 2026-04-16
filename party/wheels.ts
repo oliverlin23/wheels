@@ -7,17 +7,27 @@ import { createRng } from '../src/game/rng'
 import { WHEELS } from '../src/game/rules/panels'
 import { createInitialGameState } from '../src/store/game'
 
+type PlayerEntry = {
+  id: string
+  name: string
+  heroes?: [FigurineName, FigurineName]
+  connected: boolean
+}
+
 type RoomState = {
   phase: RoomPhase
-  players: { id: string; name: string; heroes?: [FigurineName, FigurineName] }[]
+  players: PlayerEntry[]
   spectatorIds: Set<string>
   game: GameState | null
   rng: [(() => number), (() => number)] | null
   seed: number
   spinTimer: ReturnType<typeof setTimeout> | null
+  disconnectTimers: [ReturnType<typeof setTimeout> | null, ReturnType<typeof setTimeout> | null]
+  rematchVotes: [boolean, boolean]
 }
 
 const SPIN_TIMEOUT_MS = 60_000
+const DISCONNECT_TIMEOUT_MS = 60_000
 
 export default class WheelsServer implements Party.Server {
   state: RoomState
@@ -31,14 +41,43 @@ export default class WheelsServer implements Party.Server {
       rng: null,
       seed: Math.floor(Math.random() * 0xFFFFFFFF),
       spinTimer: null,
+      disconnectTimers: [null, null],
+      rematchVotes: [false, false],
     }
   }
 
   onConnect(conn: Party.Connection) {
+    // Try to reclaim a disconnected player slot during an active game
+    const disconnectedIdx = this.state.players.findIndex(p => !p.connected)
+    if (disconnectedIdx !== -1 && (this.state.phase === 'playing' || this.state.phase === 'done' || this.state.phase === 'hero-select')) {
+      this.state.players[disconnectedIdx].id = conn.id
+      this.state.players[disconnectedIdx].connected = true
+
+      // Clear disconnect timer
+      if (this.state.disconnectTimers[disconnectedIdx as 0 | 1] !== null) {
+        clearTimeout(this.state.disconnectTimers[disconnectedIdx as 0 | 1]!)
+        this.state.disconnectTimers[disconnectedIdx as 0 | 1] = null
+      }
+
+      // Send current game state so the reconnected client catches up
+      if (this.state.game) {
+        this.sendTo(conn, {
+          type: 'MATCH_START',
+          game: this.state.game,
+          yourPlayer: disconnectedIdx as 0 | 1,
+        })
+      }
+
+      this.broadcastLobbyState()
+      return
+    }
+
+    // Normal connection: join as player or spectator
     if (this.state.phase === 'lobby' && this.state.players.length < 2) {
       this.state.players.push({
         id: conn.id,
         name: `Player ${this.state.players.length + 1}`,
+        connected: true,
       })
     } else {
       this.state.spectatorIds.add(conn.id)
@@ -46,7 +85,8 @@ export default class WheelsServer implements Party.Server {
 
     this.broadcastLobbyState()
 
-    if (this.state.players.length === 2 && this.state.phase === 'lobby') {
+    if (this.state.players.length === 2 && this.state.phase === 'lobby' &&
+        this.state.players.every(p => p.connected)) {
       this.state.phase = 'hero-select'
       this.broadcastLobbyState()
     }
@@ -56,22 +96,21 @@ export default class WheelsServer implements Party.Server {
     const playerIndex = this.state.players.findIndex(p => p.id === conn.id)
 
     if (playerIndex !== -1) {
-      this.state.players.splice(playerIndex, 1)
+      if (this.state.phase === 'playing' || this.state.phase === 'done') {
+        // During active game or post-game: mark disconnected, start forfeit timer
+        this.state.players[playerIndex].connected = false
 
-      if (this.state.phase === 'playing' && this.state.game && this.state.players.length === 1) {
-        this.clearSpinTimer()
-        const winnerIndex: 0 | 1 = playerIndex === 0 ? 1 : 0
-        this.state.game = {
-          ...this.state.game,
-          roundPhase: 'done',
-          winner: winnerIndex,
+        if (this.state.phase === 'playing') {
+          this.state.disconnectTimers[playerIndex as 0 | 1] = setTimeout(() => {
+            this.onDisconnectTimeout(playerIndex as 0 | 1)
+          }, DISCONNECT_TIMEOUT_MS)
         }
-        this.state.phase = 'done'
-        this.broadcast({
-          type: 'RESOLVE_UPDATE',
-          game: this.state.game,
-          events: [{ type: 'game_over', detail: `Player ${winnerIndex + 1} wins by forfeit!` }],
-        })
+      } else {
+        // In lobby or hero-select: actually remove the player and revert to lobby
+        this.state.players.splice(playerIndex, 1)
+        if (this.state.phase === 'hero-select') {
+          this.state.phase = 'lobby'
+        }
       }
     } else {
       this.state.spectatorIds.delete(conn.id)
@@ -107,6 +146,9 @@ export default class WheelsServer implements Party.Server {
         break
       case 'CONFIRM':
         this.handleConfirm(playerIndex as 0 | 1, sender)
+        break
+      case 'REMATCH':
+        this.handleRematch(playerIndex as 0 | 1)
         break
     }
   }
@@ -203,6 +245,9 @@ export default class WheelsServer implements Party.Server {
 
     this.state.game = confirmSpins(this.state.game, playerIndex)
 
+    // Acknowledge to the sender that their confirm went through
+    this.sendTo(sender, { type: 'CONFIRMED' })
+
     // Notify the opponent that this player is ready
     const opponentIndex = playerIndex === 0 ? 1 : 0
     const opponentConn = this.getPlayerConnection(opponentIndex)
@@ -212,6 +257,25 @@ export default class WheelsServer implements Party.Server {
 
     if (bothConfirmed(this.state.game)) {
       this.proceedToRevealAndResolve()
+    }
+  }
+
+  private handleRematch(playerIndex: 0 | 1) {
+    if (this.state.phase !== 'done') return
+
+    this.state.rematchVotes[playerIndex] = true
+
+    // Both players voted: reset to hero-select
+    if (this.state.rematchVotes[0] && this.state.rematchVotes[1]) {
+      this.state.phase = 'hero-select'
+      this.state.game = null
+      this.state.rng = null
+      this.state.seed = Math.floor(Math.random() * 0xFFFFFFFF)
+      this.state.rematchVotes = [false, false]
+      this.state.players.forEach(p => { p.heroes = undefined })
+
+      this.broadcast({ type: 'RETURN_TO_LOBBY' })
+      this.broadcastLobbyState()
     }
   }
 
@@ -236,7 +300,7 @@ export default class WheelsServer implements Party.Server {
     } else {
       // Start next round
       this.state.game = { ...this.state.game, round: this.state.game.round + 1 }
-      const { state: nextRoundState, events: roundEvents } = startRound(this.state.game)
+      const { state: nextRoundState } = startRound(this.state.game)
       this.state.game = nextRoundState
 
       // Broadcast the new round state so clients know spinning has restarted
@@ -275,6 +339,26 @@ export default class WheelsServer implements Party.Server {
     this.proceedToRevealAndResolve()
   }
 
+  private onDisconnectTimeout(playerIndex: 0 | 1) {
+    this.state.disconnectTimers[playerIndex] = null
+    if (!this.state.game || this.state.phase !== 'playing') return
+
+    // Player didn't reconnect in time — opponent wins by forfeit
+    const winnerIndex: 0 | 1 = playerIndex === 0 ? 1 : 0
+    this.clearSpinTimer()
+    this.state.game = {
+      ...this.state.game,
+      roundPhase: 'done',
+      winner: winnerIndex,
+    }
+    this.state.phase = 'done'
+    this.broadcast({
+      type: 'RESOLVE_UPDATE',
+      game: this.state.game,
+      events: [{ type: 'game_over', detail: `Player ${winnerIndex + 1} wins by forfeit!` }],
+    })
+  }
+
   private getPlayerConnection(playerIndex: number): Party.Connection | null {
     const playerId = this.state.players[playerIndex]?.id
     if (!playerId) return null
@@ -293,15 +377,28 @@ export default class WheelsServer implements Party.Server {
   }
 
   private broadcastLobbyState() {
-    this.broadcast({
-      type: 'LOBBY_STATE',
-      players: this.state.players.map(p => ({
-        id: p.id,
-        name: p.name,
-        ready: p.heroes !== undefined,
-      })),
-      spectators: this.state.spectatorIds.size,
-      phase: this.state.phase,
-    })
+    const players = this.state.players.map(p => ({
+      id: p.id,
+      name: p.name,
+      ready: p.heroes !== undefined,
+    }))
+    const spectators = this.state.spectatorIds.size
+    const phase = this.state.phase
+
+    for (const conn of this.room.getConnections()) {
+      const playerIndex = this.state.players.findIndex(p => p.id === conn.id)
+      const yourPlayer: 0 | 1 | 'spectator' =
+        playerIndex === 0 ? 0 :
+        playerIndex === 1 ? 1 :
+        'spectator'
+
+      this.sendTo(conn, {
+        type: 'LOBBY_STATE',
+        players,
+        spectators,
+        phase,
+        yourPlayer,
+      })
+    }
   }
 }

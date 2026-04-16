@@ -8,9 +8,9 @@ function makePlayer(bulwark: number): PlayerState {
     rank: 'bronze',
     energy: 0,
     xp: 0,
-    slot: 'squares',
+    slot: 'suns',
   }
-  return { crownHp: 20, bulwark, heroes: [hero, { ...hero, slot: 'diamonds' }] }
+  return { crownHp: 20, bulwark, heroes: [hero, { ...hero, slot: 'moons' }] }
 }
 
 describe('decayBulwark', () => {
@@ -35,17 +35,17 @@ describe('decayBulwark', () => {
 })
 
 describe('buildBulwark', () => {
-  it('3 hammers = +1', () => {
+  it('3 shields = +1', () => {
     const result = buildBulwark(makePlayer(0), 3)
     expect(result.player.bulwark).toBe(1)
   })
 
-  it('4 hammers = +2', () => {
+  it('4 shields = +2', () => {
     const result = buildBulwark(makePlayer(0), 4)
     expect(result.player.bulwark).toBe(2)
   })
 
-  it('5 hammers = +3', () => {
+  it('5 shields = +3', () => {
     const result = buildBulwark(makePlayer(0), 5)
     expect(result.player.bulwark).toBe(3)
   })
@@ -55,13 +55,13 @@ describe('buildBulwark', () => {
     expect(result.player.bulwark).toBe(MAX_BULWARK)
   })
 
-  it('2 hammers = no change', () => {
+  it('2 shields = no change', () => {
     const result = buildBulwark(makePlayer(1), 2)
     expect(result.player.bulwark).toBe(1)
     expect(result.events).toHaveLength(0)
   })
 
-  it('1 hammer = no change', () => {
+  it('1 shield = no change', () => {
     const result = buildBulwark(makePlayer(0), 1)
     expect(result.player.bulwark).toBe(0)
     expect(result.events).toHaveLength(0)

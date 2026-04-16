@@ -12,6 +12,7 @@ import {
 } from '../game/rules/actions'
 import { resolve } from '../game/rules/resolve'
 import { useLogStore } from './log'
+import { usePlaybackStore } from '../resolve/playbackStore'
 
 const INITIAL_WHEEL_STATE: WheelState = {
   spinsRemaining: 3,
@@ -47,16 +48,16 @@ export function createInitialGameState(
         crownHp: 10,
         bulwark: 0,
         heroes: [
-          { name: p1Heroes[0], rank: 'bronze', energy: 0, xp: 0, slot: 'squares' },
-          { name: p1Heroes[1], rank: 'bronze', energy: 0, xp: 0, slot: 'diamonds' },
+          { name: p1Heroes[0], rank: 'bronze', energy: 0, xp: 0, slot: 'suns' },
+          { name: p1Heroes[1], rank: 'bronze', energy: 0, xp: 0, slot: 'moons' },
         ],
       },
       {
         crownHp: 10,
         bulwark: 0,
         heroes: [
-          { name: p2Heroes[0], rank: 'bronze', energy: 0, xp: 0, slot: 'squares' },
-          { name: p2Heroes[1], rank: 'bronze', energy: 0, xp: 0, slot: 'diamonds' },
+          { name: p2Heroes[0], rank: 'bronze', energy: 0, xp: 0, slot: 'suns' },
+          { name: p2Heroes[1], rank: 'bronze', energy: 0, xp: 0, slot: 'moons' },
         ],
       },
     ],
@@ -108,8 +109,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
   resolveRound: () => {
     const { game } = get()
     const result = resolve(game)
-    useLogStore.getState().pushEvents(result.events)
-    set({ game: result.state })
+    // Drive through the playback pipeline so local testing matches multiplayer flow
+    usePlaybackStore.getState().startPlayback(result.events, result.state)
   },
 
   reset: (seed, p1Heroes, p2Heroes) => {
